@@ -127,7 +127,7 @@ See [`run_eval.sh help`](run_eval.sh) for all commands.
 ---
 
 <details>
-<summary><strong>📚 API Reference Documentation</strong></summary>
+<summary><strong>📚 API Reference Documentation</strong> (<a href="https://docs.csm.ai">Full Reference</a>)</summary>
 
 ### Image-to-3D
 
