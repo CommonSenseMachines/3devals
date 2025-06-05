@@ -8,7 +8,7 @@ This repository contains CSM.AI API documentation and evaluation scripts for tes
 
 The `full_eval_set` folder has an extensive evaluation set and we will post qualitiative and quantitative results on this here (with continual updates).
 
-Note: This script does not run AI retopology as this can be time consuming - retopology can be run separately on these outputs using the API docs at https://docs.csm.ai/sessions/retopology.
+Note: This script does not run AI retopology as this can be time consuming - retopology can be run separately on these outputs using the API docs at [https://docs.csm.ai/sessions/retopology](https://docs.csm.ai/sessions/retopology) (or simply from the UI; all assets ran from here will show up on [3d.csm.ai](https://3d.csm.ai) in your account for easy access and downloading).
 
 ## Quick Start
 
