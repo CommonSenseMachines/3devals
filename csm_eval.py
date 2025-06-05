@@ -59,9 +59,9 @@ COMMON_SETTINGS = {
 JOB_CONFIGS = [
     {"name": "image_to_3d_base", "type": "image_to_3d", "geometry_model": "base", "texture_model": "none"},
     {"name": "image_to_3d_turbo", "type": "image_to_3d", "geometry_model": "turbo", "texture_model": "none"},
-    # {"name": "image_to_3d_turbo_baked", "type": "image_to_3d", "geometry_model": "turbo", "texture_model": "baked"},
-    # {"name": "image_to_3d_turbo_pbr", "type": "image_to_3d", "geometry_model": "turbo", "texture_model": "pbr"},
-    # {"name": "image_to_kit_pro_turbo_baked", "type": "image_to_kit", "decomposition_model": "pro", "geometry_model": "turbo", "texture_model": "baked"},
+    {"name": "image_to_3d_turbo_baked", "type": "image_to_3d", "geometry_model": "turbo", "texture_model": "baked"},
+    {"name": "image_to_3d_turbo_pbr", "type": "image_to_3d", "geometry_model": "turbo", "texture_model": "pbr"},
+    {"name": "image_to_kit_pro_turbo_baked", "type": "image_to_kit", "decomposition_model": "pro", "geometry_model": "turbo", "texture_model": "baked"},
     # {"name": "chat_to_3d_then_image_to_3d", "type": "chat_to_3d", "follow_up": "image_to_3d"}
 ]
 
