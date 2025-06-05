@@ -114,7 +114,7 @@ For each image in `images/`, runs 5 job configurations with `resolution=200000`:
 3. **Image-to-3D (turbo + baked)**: `geometry_model='turbo' + texture_model='baked'`
 4. **Image-to-3D (turbo + pbr)**: `geometry_model='turbo' + texture_model='pbr'`
 5. **Image-to-Kit**: `decomposition_model='pro' + geometry_model='turbo' + texture_model='baked'`
-<!-- 6. **Chat-to-3D**: Re-prompt image for better pose, then Image-to-3D -->
+6. **Chat-to-3D**: Re-prompt image, then Image-to-3D
 
 See [`run_eval.sh help`](run_eval.sh) for all commands.
 
