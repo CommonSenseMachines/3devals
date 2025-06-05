@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CSM API Evaluation Script
+CSM API Evaluation Script.
 This script runs multiple CSM API jobs for all images in the images directory.
 Jobs are submitted and tracked locally - rerun the script to check progress.
 """
