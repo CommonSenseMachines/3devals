@@ -1,10 +1,12 @@
-# CSM.AI API Reference
+# Evaluation framrwork for 3D generative AI
 
 ## Overview
 
 This repository contains CSM.AI API documentation and evaluation scripts for testing various 3D generation capabilities.
 
-## API Key Setup
+## Quick Start
+
+### Get Your API Key
 
 Before using the evaluation scripts, you'll need a CSM.ai API key:
 
@@ -13,18 +15,16 @@ Before using the evaluation scripts, you'll need a CSM.ai API key:
 3. Navigate to **Settings → Developer Settings**
 4. Copy your API key
 
-The evaluation script will prompt you for your API key on first run and **automatically save it locally** for future use. Alternatively, you can set it as an environment variable:
+The evaluation script will prompt you for your API key on first run and **automatically save it locally** for future use.
+
+### Running the Evaluation
+
 ```bash
-export CSM_API_KEY="your_api_key_here"
-```
+# Show available commands
+./run_eval.sh
 
-<details>
-# Option 1: Use the shell script (recommended)
+# Run the full evaluation (recommended for first time)
 ./run_eval.sh run
-
-# Option 2: Use Python directly  
-pip install -r requirements.txt
-python csm_eval.py
 ```
 
 ### Available Commands
@@ -107,11 +107,27 @@ For each image in `images/`, runs 6 job configurations with `resolution=200000`:
 
 See [`USAGE.md`](USAGE.md) for detailed instructions and [`run_eval.sh help`](run_eval.sh) for all commands.
 
-</details>
+## File Structure
+
+```
+├── csm_eval.py              # Main evaluation script
+├── job_tracking.json        # Job tracking (created automatically)
+├── requirements.txt         # Python dependencies
+├── USAGE.md                # Detailed usage guide
+├── README.md               # This file
+├── .csm_config             # API key storage (created automatically)
+├── images/                 # Place your test images here
+│   └── test1.png
+└── results/                # Output directory (created automatically)
+    ├── job_summary.json
+    ├── combined_submission_results.json
+    └── {image_name}_submission_results.json
+```
 
 ---
 
-## API Endpoints
+<details>
+<summary><strong>📚 API Reference Documentation</strong></summary>
 
 ### Image-to-3D
 
@@ -418,119 +434,5 @@ Generate improved images through conversational prompts, then convert to 3D.
 ```
 
 **Note**: Wait for status to be `complete`, then use `messages[1].images[0].asset._id` as the `input.image` in subsequent Image-to-3D calls.
-
-## File Structure
-
-```
-├── csm_eval.py              # Main evaluation script
-├── job_tracking.json        # Job tracking (created automatically)
-├── requirements.txt         # Python dependencies
-├── USAGE.md                # Detailed usage guide
-├── README.md               # This file
-├── .csm_config             # API key storage (created automatically)
-├── images/                 # Place your test images here
-│   └── test1.png
-└── results/                # Output directory (created automatically)
-    ├── job_summary.json
-    ├── combined_submission_results.json
-    └── {image_name}_submission_results.json
-```
-
-<details>
-<summary><strong>📚 Quick Start & Usage</strong></summary>
-
-### Running the Evaluation
-
-```bash
-# Show available commands
-./run_eval.sh
-
-# Option 1: Use the shell script (recommended)
-./run_eval.sh run
-
-# Option 2: Use Python directly  
-pip install -r requirements.txt
-python csm_eval.py
-```
-
-### Available Commands
-
-The `run_eval.sh` script provides several commands for managing the evaluation workflow:
-
-| Command | Description | Usage |
-|---------|-------------|-------|
-| **`run`** | Full evaluation workflow (setup + evaluate all images in images/*) | `./run_eval.sh run` |
-| **`setup`** | Setup environment and dependencies only | `./run_eval.sh setup` |
-| **`eval`** | Run evaluation only (skip setup) | `./run_eval.sh eval` |
-| **`progress`** | Check progress of submitted jobs | `./run_eval.sh progress` |
-| **`clean`** | Clean up previous results (interactive) | `./run_eval.sh clean` |
-| **`help`** | Show all commands and examples | `./run_eval.sh help` |
-
-### Command Details
-
-**🚀 `run`** - Complete workflow
-- Sets up Python environment  
-- Installs dependencies
-- Creates directories
-- Runs evaluation for all images in `images/`
-- Shows summary
-
-**⚙️ `setup`** - Environment preparation
-- Checks Python/pip installation
-- Installs required packages
-- Creates `images/` and `results/` directories
-- Warns if no images found
-
-**🎯 `eval`** - Evaluation only
-- Runs evaluation (assumes setup complete)
-- Best for re-running after adding new images
-
-**📊 `progress`** - Job monitoring  
-- Checks status of previously submitted jobs
-- Updates job tracking file
-- Shows completion progress
-- Run periodically to monitor 30-60min job processing
-- **Note**: Job tracking uses image file names as unique identifiers
-
-**🧹 `clean`** - Reset evaluation
-- Interactive confirmation required
-- Deletes `results/` directory and `job_tracking.json`
-- Use for fresh start or troubleshooting
-
-### Common Workflows
-
-```bash
-# See available commands
-./run_eval.sh
-
-# First time setup
-./run_eval.sh run
-
-# Check job progress (run every 15-30 minutes)  
-./run_eval.sh progress
-
-# Add new images and evaluate them
-./run_eval.sh eval
-
-# Fresh start (removes all previous results)
-./run_eval.sh clean
-./run_eval.sh run
-
-# Troubleshooting
-./run_eval.sh progress   # Check current status
-```
-
-### Evaluation Jobs
-
-For each image in `images/`, runs 6 job configurations with `resolution=200000`:
-
-1. **Image-to-3D (base)**: `geometry_model='base'`
-2. **Image-to-3D (turbo)**: `geometry_model='turbo'` 
-3. **Image-to-3D (turbo + baked)**: `geometry_model='turbo' + texture_model='baked'`
-4. **Image-to-3D (turbo + pbr)**: `geometry_model='turbo' + texture_model='pbr'`
-5. **Image-to-Kit**: `decomposition_model='pro' + geometry_model='turbo' + texture_model='baked'`
-6. **Chat-to-3D**: Re-prompt image for better pose, then Image-to-3D
-
-See [`USAGE.md`](USAGE.md) for detailed instructions and [`run_eval.sh help`](run_eval.sh) for all commands.
 
 </details>
