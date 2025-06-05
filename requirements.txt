@@ -1,3 +1,4 @@
 requests>=2.28.0
 pathlib
-typing 
+typing
+tqdm
