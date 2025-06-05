@@ -1,5 +1,7 @@
 # Evaluation framework for 3D generative AI
 
+Evals in 3D generative AI are broken. Let's fix it.
+
 ## Overview
 
 This repository contains CSM.AI API documentation and evaluation scripts for testing various 3D generation capabilities. The evaluation framework includes **automatic retry handling** for failed jobs due to rate limits or temporary API issues. Note: This script does not run AI retopology as this can be time consuming - retopology can be run separately on these outputs using the API docs at https://docs.csm.ai/sessions/retopology.
