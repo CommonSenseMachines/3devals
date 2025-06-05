@@ -59,10 +59,10 @@ COMMON_SETTINGS = {
 JOB_CONFIGS = [
     {"name": "image_to_3d_base", "type": "image_to_3d", "geometry_model": "base", "texture_model": "none"},
     {"name": "image_to_3d_turbo", "type": "image_to_3d", "geometry_model": "turbo", "texture_model": "none"},
-    {"name": "image_to_3d_turbo_baked", "type": "image_to_3d", "geometry_model": "turbo", "texture_model": "baked"},
-    {"name": "image_to_3d_turbo_pbr", "type": "image_to_3d", "geometry_model": "turbo", "texture_model": "pbr"},
-    {"name": "image_to_kit_pro_turbo_baked", "type": "image_to_kit", "decomposition_model": "pro", "geometry_model": "turbo", "texture_model": "baked"},
-    {"name": "chat_to_3d_then_image_to_3d", "type": "chat_to_3d", "follow_up": "image_to_3d"}
+    # {"name": "image_to_3d_turbo_baked", "type": "image_to_3d", "geometry_model": "turbo", "texture_model": "baked"},
+    # {"name": "image_to_3d_turbo_pbr", "type": "image_to_3d", "geometry_model": "turbo", "texture_model": "pbr"},
+    # {"name": "image_to_kit_pro_turbo_baked", "type": "image_to_kit", "decomposition_model": "pro", "geometry_model": "turbo", "texture_model": "baked"},
+    # {"name": "chat_to_3d_then_image_to_3d", "type": "chat_to_3d", "follow_up": "image_to_3d"}
 ]
 
 class JobTracker:
@@ -91,13 +91,25 @@ class JobTracker:
             logger.error(f"Could not save tracking file: {e}")
     
     def should_skip_job(self, image_name: str, job_name: str) -> bool:
-        """Check if a job should be skipped (already submitted, completed, or failed)"""
+        """Check if a job should be skipped (already submitted, completed, or failed without retry)"""
         if image_name not in self.jobs or job_name not in self.jobs[image_name]:
             return False
         
         status = self.jobs[image_name][job_name].get('status')
-        # Skip if job is already submitted, completed, or failed
-        return status in ['submitted', 'complete', 'failed']
+        
+        # Skip if job is complete or currently submitted
+        if status in ['submitted', 'complete']:
+            return True
+            
+        # Don't skip if job is in retrying status (let it retry)
+        if status == 'retrying':
+            return False
+            
+        # Don't skip failed jobs that should be retried
+        if status == 'failed':
+            return not self.should_retry_failed_job(image_name, job_name)
+            
+        return False
     
     def mark_job_submitted(self, image_name: str, job_name: str, session_id: str, session_data: Dict[str, Any]):
         """Mark a job as successfully submitted"""
@@ -111,6 +123,83 @@ class JobTracker:
             'session_data': session_data
         }
         self.save_tracking_data()
+    
+    def mark_job_failed(self, image_name: str, job_name: str, error_message: str):
+        """Mark a job as failed during submission"""
+        if image_name not in self.jobs:
+            self.jobs[image_name] = {}
+        
+        # Get existing retry count if this job was retried before
+        existing_job = self.jobs[image_name].get(job_name, {})
+        retry_count = existing_job.get('retry_count', 0)
+        
+        self.jobs[image_name][job_name] = {
+            'status': 'failed',
+            'failed_at': datetime.now().isoformat(),
+            'error': error_message,
+            'retry_count': retry_count
+        }
+        self.save_tracking_data()
+    
+    def should_retry_failed_job(self, image_name: str, job_name: str, max_retries: int = 3) -> bool:
+        """Check if a failed job should be retried"""
+        if image_name not in self.jobs or job_name not in self.jobs[image_name]:
+            return False
+            
+        job_data = self.jobs[image_name][job_name]
+        status = job_data.get('status')
+        
+        if status != 'failed':
+            return False
+            
+        retry_count = job_data.get('retry_count', 0)
+        error_message = job_data.get('error', '').lower()
+        
+        # Don't retry if we've exceeded max retries
+        if retry_count >= max_retries:
+            return False
+        
+        # Retry certain types of errors that might be temporary
+        retryable_errors = [
+            'rate limit',
+            'timeout',
+            '429',  # Too Many Requests
+            '500',  # Internal Server Error
+            '502',  # Bad Gateway
+            '503',  # Service Unavailable
+            '504',  # Gateway Timeout
+            'connection',
+            'temporary'
+        ]
+        
+        # For 400 errors, be more selective (could be rate limiting in disguise)
+        if '400' in error_message:
+            # CSM API sometimes returns 400 for rate limits without clear keywords
+            # Be more generous with 400 retries for this API
+            if any(keyword in error_message for keyword in ['rate', 'limit', 'quota', 'too many', 'bad request']):
+                return True
+            # For other 400s, still retry once in case it's a transient issue
+            if retry_count == 0:
+                return True
+            return False
+        
+        # Retry if error contains any retryable keywords
+        return any(keyword in error_message for keyword in retryable_errors)
+    
+    def mark_job_retry(self, image_name: str, job_name: str):
+        """Mark that we're retrying a failed job"""
+        if image_name in self.jobs and job_name in self.jobs[image_name]:
+            job_data = self.jobs[image_name][job_name]
+            retry_count = job_data.get('retry_count', 0) + 1
+            
+            # Update the job to retrying status
+            self.jobs[image_name][job_name].update({
+                'status': 'retrying',
+                'retry_count': retry_count,
+                'retrying_at': datetime.now().isoformat()
+            })
+            self.save_tracking_data()
+            logger.info(f"Retrying {job_name} for {image_name} (attempt {retry_count + 1})")
     
     def update_job_status(self, image_name: str, job_name: str, status: str, result_data: Optional[Dict[str, Any]] = None):
         """Update job status"""
@@ -133,11 +222,15 @@ class JobTracker:
             image_summary = {'jobs': {}}
             for job_name, job_data in jobs.items():
                 status = job_data.get('status', 'unknown')
+                if status not in summary['job_counts']:
+                    summary['job_counts'][status] = 0
                 summary['job_counts'][status] = summary['job_counts'].get(status, 0) + 1
                 image_summary['jobs'][job_name] = {
                     'status': status,
                     'session_id': job_data.get('session_id'),
-                    'submitted_at': job_data.get('submitted_at')
+                    'submitted_at': job_data.get('submitted_at'),
+                    'failed_at': job_data.get('failed_at'),
+                    'error': job_data.get('error')
                 }
             summary['images'][image_name] = image_summary
         
@@ -197,10 +290,19 @@ class CSMAPIClient:
     def submit_image_to_3d(self, image_data: str, geometry_model: str = 'base', 
                           texture_model: str = 'none') -> Dict[str, Any]:
         """Submit Image-to-3D job (doesn't wait for completion)"""
+        
+        # Handle both base64 image data and asset IDs
+        if image_data.startswith('data:'):
+            # Base64 image data
+            image_input = image_data
+        else:
+            # Asset ID - pass as reference
+            image_input = image_data
+            
         session_data = {
             "type": "image_to_3d",
             "input": {
-                "image": image_data,
+                "image": image_input,
                 "model": "sculpt",
                 "settings": {
                     "geometry_model": geometry_model,
@@ -216,10 +318,19 @@ class CSMAPIClient:
     def submit_image_to_kit(self, image_data: str, decomposition_model: str = 'pro',
                            geometry_model: str = 'turbo', texture_model: str = 'baked') -> Dict[str, Any]:
         """Submit Image-to-Kit job (doesn't wait for completion)"""
+        
+        # Handle both base64 image data and asset IDs
+        if image_data.startswith('data:'):
+            # Base64 image data
+            image_input = image_data
+        else:
+            # Asset ID - pass as reference
+            image_input = image_data
+            
         session_data = {
             "type": "image_to_kit",
             "input": {
-                "image": image_data,
+                "image": image_input,
                 "model": "sculpt",
                 "decomposition_model": decomposition_model,
                 "settings": {
@@ -235,13 +346,22 @@ class CSMAPIClient:
     
     def submit_chat_to_3d(self, image_data: str, prompt: str) -> Dict[str, Any]:
         """Submit Chat-to-3D job (doesn't wait for completion)"""
+        
+        # Handle both base64 image data and asset IDs
+        if image_data.startswith('data:'):
+            # Base64 image data
+            image_input = image_data
+        else:
+            # Asset ID - pass as reference
+            image_input = image_data
+            
         session_data = {
             "type": "chat_to_3d",
             "messages": [
                 {
                     "type": "user_prompt",
                     "message": prompt,
-                    "images": [image_data]
+                    "images": [image_input]
                 }
             ]
         }
@@ -255,24 +375,44 @@ def check_job_progress(client: CSMAPIClient, tracker: JobTracker):
     
     for image_name, jobs in tracker.jobs.items():
         for job_name, job_data in jobs.items():
-            if job_data.get('status') == 'submitted':
+            status = job_data.get('status')
+            if status == 'submitted':
                 session_id = job_data.get('session_id')
                 if session_id:
                     try:
                         session_status = client.get_session_status(session_id)
-                        status = session_status.get('status', 'incomplete')
+                        api_status = session_status.get('status', 'incomplete')
                         
-                        if status == 'complete':
+                        if api_status == 'complete':
                             logger.info(f"Job {job_name} for {image_name} completed!")
                             tracker.update_job_status(image_name, job_name, 'complete', session_status)
-                        elif status == 'failed':
+                        elif api_status == 'failed':
                             logger.warning(f"Job {job_name} for {image_name} failed")
                             tracker.update_job_status(image_name, job_name, 'failed', session_status)
                         else:
-                            logger.info(f"Job {job_name} for {image_name} still in progress (status: {status})")
+                            logger.info(f"Job {job_name} for {image_name} still in progress (status: {api_status})")
                     
                     except Exception as e:
                         logger.error(f"Error checking job {job_name} for {image_name}: {e}")
+            elif status == 'failed':
+                retry_count = job_data.get('retry_count', 0)
+                if tracker.should_retry_failed_job(image_name, job_name):
+                    logger.info(f"Job {job_name} for {image_name} previously failed (retry {retry_count}/3): {job_data.get('error', 'Unknown error')} - eligible for retry")
+                else:
+                    logger.info(f"Job {job_name} for {image_name} permanently failed (retry {retry_count}/3): {job_data.get('error', 'Unknown error')}")
+            elif status == 'retrying':
+                retry_count = job_data.get('retry_count', 0)
+                logger.info(f"Job {job_name} for {image_name} is being retried (attempt {retry_count + 1})")
+            elif status == 'complete':
+                logger.info(f"Job {job_name} for {image_name} already completed")
+    
+    # Check for missing jobs (jobs that should exist but don't)
+    expected_jobs = [config['name'] for config in JOB_CONFIGS]
+    for image_name in tracker.jobs:
+        actual_jobs = set(tracker.jobs[image_name].keys())
+        missing_jobs = set(expected_jobs) - actual_jobs
+        if missing_jobs:
+            logger.warning(f"Missing jobs for {image_name}: {', '.join(missing_jobs)} - these may have failed to submit")
 
 def submit_jobs_for_image(client: CSMAPIClient, tracker: JobTracker, image_path: str) -> Dict[str, Any]:
     """Submit all jobs for a single image"""
@@ -296,8 +436,9 @@ def submit_jobs_for_image(client: CSMAPIClient, tracker: JobTracker, image_path:
             "note": "All jobs already submitted/completed"
         }
     
-    # Upload image
+    # Upload image only once (will be reused via asset ID)
     image_data = client.upload_image(image_path)
+    image_asset_id = None  # Will be populated after first successful job submission
     
     results = {
         "image_name": image_name,
@@ -315,30 +456,70 @@ def submit_jobs_for_image(client: CSMAPIClient, tracker: JobTracker, image_path:
             logger.info(f"Skipping {job_name} for {image_name} - status: {job_status}")
             continue
         
+        # Check if this is a retry attempt
+        is_retry = (image_name in tracker.jobs and 
+                   job_name in tracker.jobs[image_name] and 
+                   tracker.jobs[image_name][job_name].get('status') == 'failed')
+        
+        if is_retry:
+            tracker.mark_job_retry(image_name, job_name)
+            # Add delay for retries to be respectful to the API
+            retry_count = tracker.jobs[image_name][job_name].get('retry_count', 0)
+            delay = min(2 ** retry_count, 30)  # Exponential backoff, max 30 seconds
+            logger.info(f"Waiting {delay} seconds before retry...")
+            time.sleep(delay)
+        
+        # Use asset ID if we have it from a previous job, otherwise use image data
+        current_image_input = image_asset_id if image_asset_id else image_data
+        
         try:
             if job_config["type"] == "image_to_3d":
                 session = client.submit_image_to_3d(
-                    image_data,
+                    current_image_input,
                     geometry_model=job_config["geometry_model"],
                     texture_model=job_config["texture_model"]
                 )
+                
+                # Extract asset ID from first successful submission
+                if not image_asset_id and 'input' in session and 'image' in session['input']:
+                    if isinstance(session['input']['image'], dict) and '_id' in session['input']['image']:
+                        image_asset_id = session['input']['image']['_id']
+                        logger.info(f"Extracted image asset ID: {image_asset_id} - will reuse for subsequent jobs")
+                
                 tracker.mark_job_submitted(image_name, job_name, session['_id'], session)
                 results["jobs"][job_name] = {"session_id": session['_id'], "status": "submitted"}
                 
             elif job_config["type"] == "image_to_kit":
                 session = client.submit_image_to_kit(
-                    image_data,
+                    current_image_input,
                     decomposition_model=job_config["decomposition_model"],
                     geometry_model=job_config["geometry_model"],
                     texture_model=job_config["texture_model"]
                 )
+                
+                # Extract asset ID from first successful submission
+                if not image_asset_id and 'input' in session and 'image' in session['input']:
+                    if isinstance(session['input']['image'], dict) and '_id' in session['input']['image']:
+                        image_asset_id = session['input']['image']['_id']
+                        logger.info(f"Extracted image asset ID: {image_asset_id} - will reuse for subsequent jobs")
+                
                 tracker.mark_job_submitted(image_name, job_name, session['_id'], session)
                 results["jobs"][job_name] = {"session_id": session['_id'], "status": "submitted"}
                 
             elif job_config["type"] == "chat_to_3d":
                 # For chat-to-3d, we submit the chat job first
                 chat_prompt = "generate a better pose for image to 3D, preserve all details in the original image"
-                session = client.submit_chat_to_3d(image_data, chat_prompt)
+                session = client.submit_chat_to_3d(current_image_input, chat_prompt)
+                
+                # Extract asset ID from first successful submission (chat_to_3d uses images array)
+                if not image_asset_id and 'messages' in session and len(session['messages']) > 0:
+                    message = session['messages'][0]
+                    if 'images' in message and len(message['images']) > 0:
+                        image_ref = message['images'][0]
+                        if isinstance(image_ref, dict) and '_id' in image_ref:
+                            image_asset_id = image_ref['_id']
+                            logger.info(f"Extracted image asset ID: {image_asset_id} - will reuse for subsequent jobs")
+                
                 tracker.mark_job_submitted(image_name, job_name, session['_id'], session)
                 results["jobs"][job_name] = {
                     "chat_session_id": session['_id'], 
@@ -350,6 +531,7 @@ def submit_jobs_for_image(client: CSMAPIClient, tracker: JobTracker, image_path:
             
         except Exception as e:
             logger.error(f"Failed to submit {job_name} for {image_name}: {e}")
+            tracker.mark_job_failed(image_name, job_name, str(e))
             results["jobs"][job_name] = {"error": str(e), "status": "failed_to_submit"}
     
     return results
@@ -365,7 +547,7 @@ def main():
     """Main evaluation function"""
     logger.info("Starting CSM API evaluation")
     
-    # Check if this is a progress-only run
+    # Check command line arguments
     progress_only = len(sys.argv) > 1 and sys.argv[1] == '--progress-only'
     
     # Initialize API client and job tracker
@@ -383,6 +565,8 @@ def main():
     if progress_only:
         logger.info("Progress-only mode - skipping job submission")
     else:
+        logger.info("Evaluation mode - will submit new jobs and retry eligible failed jobs")
+        
         # Get all images from the images directory
         images_dir = Path("images")
         if not images_dir.exists():
@@ -422,6 +606,54 @@ def main():
     # Always generate and save summary
     summary = tracker.get_submitted_jobs_summary()
     logger.info(f"Job submission summary: {summary['job_counts']}")
+    
+    # Check for missing jobs across all processed images and provide detailed feedback
+    expected_jobs = [config['name'] for config in JOB_CONFIGS]
+    images_dir = Path("images")
+    
+    if images_dir.exists():
+        image_files = list(images_dir.glob("*.png")) + list(images_dir.glob("*.jpg")) + list(images_dir.glob("*.jpeg"))
+        
+        # Check each image for missing jobs
+        missing_jobs_report = {}
+        failed_jobs_report = {}
+        
+        for image_file in image_files:
+            image_name = image_file.stem
+            
+            if image_name in tracker.jobs:
+                actual_jobs = set(tracker.jobs[image_name].keys())
+                missing_jobs = set(expected_jobs) - actual_jobs
+                if missing_jobs:
+                    missing_jobs_report[image_name] = list(missing_jobs)
+                
+                # Check for failed jobs
+                failed_jobs = []
+                for job_name, job_data in tracker.jobs[image_name].items():
+                    if job_data.get('status') == 'failed':
+                        failed_jobs.append({
+                            'job': job_name,
+                            'error': job_data.get('error', 'Unknown error')
+                        })
+                if failed_jobs:
+                    failed_jobs_report[image_name] = failed_jobs
+            else:
+                # No jobs tracked for this image at all
+                missing_jobs_report[image_name] = expected_jobs
+        
+        if missing_jobs_report:
+            logger.warning("Missing jobs detected:")
+            for image_name, missing in missing_jobs_report.items():
+                logger.warning(f"  {image_name}: {', '.join(missing)}")
+        
+        if failed_jobs_report:
+            logger.error("Failed jobs detected:")
+            for image_name, failed in failed_jobs_report.items():
+                for job_info in failed:
+                    logger.error(f"  {image_name}/{job_info['job']}: {job_info['error']}")
+        
+        if not missing_jobs_report and not failed_jobs_report:
+            logger.info("All expected jobs are tracked and none failed during submission")
     
     # Save tracking summary
     summary_path = os.path.join(RESULTS_DIR, "job_summary.json")

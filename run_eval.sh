@@ -125,6 +125,33 @@ setup_environment() {
     return 0
 }
 
+# Function to show what will be evaluated
+show_evaluation_plan() {
+    echo ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}                    🚀 CSM.AI 3D Generation Evaluation${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${YELLOW}For each image in images/, this will run 5 job configurations:${NC}"
+    echo ""
+    echo -e "  ${GREEN}1.${NC} Image-to-3D (base)        → geometry_model='base'"
+    echo -e "  ${GREEN}2.${NC} Image-to-3D (turbo)       → geometry_model='turbo'"
+    echo -e "  ${GREEN}3.${NC} Image-to-3D (turbo+baked) → geometry_model='turbo' + texture_model='baked'"
+    echo -e "  ${GREEN}4.${NC} Image-to-3D (turbo+pbr)   → geometry_model='turbo' + texture_model='pbr'"
+    echo -e "  ${GREEN}5.${NC} Image-to-Kit (pro)        → decomposition_model='pro' + geometry_model='turbo' + texture_model='baked'"
+    # echo -e "  ${GREEN}6.${NC} Chat-to-3D                → Re-prompt image for better pose, then Image-to-3D"
+    echo ""
+    echo -e "${BLUE}Settings:${NC} resolution=200000 for all jobs"
+    echo -e "${BLUE}Note:${NC} This script does not run AI retopology (can be time consuming)"
+    echo -e "${BLUE}      Retopology can be run separately: ${NC}https://docs.csm.ai/sessions/retopology"
+    echo ""
+    echo -e "${RED}⚠️  IMPORTANT:${NC} Some jobs may initially fail due to API rate limits."
+    echo -e "${RED}    The evaluation will automatically retry failed jobs with exponential backoff.${NC}"
+    echo ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+}
+
 # Function to run the evaluation
 run_evaluation() {
     log "Starting CSM API evaluation..."
@@ -138,6 +165,9 @@ run_evaluation() {
     # Count images
     IMAGE_COUNT=$(ls images/*.{png,jpg,jpeg} 2>/dev/null | wc -l)
     log "Found $IMAGE_COUNT images to process"
+    
+    # Show evaluation plan
+    show_evaluation_plan
     
     # Run the Python evaluation script
     python3 csm_eval.py
@@ -159,6 +189,11 @@ check_progress() {
         warn "No job tracking file found. Run evaluation first."
         return 1
     fi
+    
+    echo ""
+    echo -e "${RED}⚠️  NOTE:${NC} If you see failed jobs, they may be due to API rate limits."
+    echo -e "${RED}    Run ${GREEN}./run_eval.sh eval${NC}${RED} to automatically retry failed jobs.${NC}"
+    echo ""
     
     python3 csm_eval.py --progress-only
     show_summary
@@ -214,25 +249,33 @@ clean_results() {
 
 # Function to show help
 show_help() {
-    echo "CSM API Evaluation Runner"
+    echo -e "${GREEN}🚀 Evaluation framework for 3D generative AI${NC}"
     echo ""
-    echo "Usage: $0 [COMMAND]"
+    echo -e "${BLUE}This tool evaluates CSM.AI's 3D generation capabilities by running multiple"
+    echo -e "job configurations on your images and comparing the results. It tests:${NC}"
+    echo -e "${GREEN}• Image-to-3D generation (base, turbo, with textures)"
+    echo -e "• Image-to-Kit decomposition (breaking objects into parts)${NC}"
+    # echo -e "• Chat-to-3D workflows (AI-improved poses)${NC}"
     echo ""
-    echo "Commands:"
-    echo "  run         Run the full evaluation (setup + evaluate all images in images/*)"
-    echo "  setup       Setup environment and dependencies only"
-    echo "  eval        Run evaluation only (skip setup)"
-    echo "  progress    Check progress of submitted jobs"
-    echo "  clean       Clean up previous results"
-    echo "  help        Show this help message"
+    echo -e "${BLUE}Results are tracked and can be analyzed to benchmark 3D AI performance.${NC}"
     echo ""
-    echo "Environment Variables:"
-    echo "  CSM_API_KEY   CSM.ai API key (get from https://3d.csm.ai/)"
+    echo -e "${YELLOW}Usage:${NC} $0 [COMMAND]"
     echo ""
-    echo "Examples:"
-    echo "  $0 run                 # Full evaluation workflow"
-    echo "  $0 progress            # Check job progress"
-    echo "  $0 clean && $0 run     # Clean start"
+    echo -e "${YELLOW}Commands:${NC}"
+    echo -e "  ${GREEN}run${NC}         Run the full evaluation (setup + evaluate all images in images/*)"
+    echo -e "  ${GREEN}setup${NC}       Setup environment and dependencies only"
+    echo -e "  ${GREEN}eval${NC}        Run evaluation only (skip setup)"
+    echo -e "  ${GREEN}progress${NC}    Check progress of submitted jobs"
+    echo -e "  ${GREEN}clean${NC}       Clean up previous results"
+    echo -e "  ${GREEN}help${NC}        Show this help message"
+    echo ""
+    echo -e "${YELLOW}Environment Variables:${NC}"
+    echo -e "  ${GREEN}CSM_API_KEY${NC}   CSM.ai API key (get from ${BLUE}https://3d.csm.ai/${NC})"
+    echo ""
+    echo -e "${YELLOW}Examples:${NC}"
+    echo -e "  ${BLUE}$0 run${NC}                 # Full evaluation workflow"
+    echo -e "  ${BLUE}$0 progress${NC}            # Check job progress"
+    echo -e "  ${BLUE}$0 clean && $0 run${NC}     # Clean start"
 }
 
 # Main script logic

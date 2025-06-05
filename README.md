@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repository contains CSM.AI API documentation and evaluation scripts for testing various 3D generation capabilities.
+This repository contains CSM.AI API documentation and evaluation scripts for testing various 3D generation capabilities. The evaluation framework includes **automatic retry handling** for failed jobs due to rate limits or temporary API issues. Note: This script does not run AI retopology as this can be time consuming - retopology can be run separately on these outputs using the API docs at https://docs.csm.ai/sessions/retopology.
 
 ## Quick Start
 
@@ -58,6 +58,10 @@ The `run_eval.sh` script provides several commands for managing the evaluation w
 **🎯 `eval`** - Evaluation only
 - Runs evaluation (assumes setup complete)
 - Best for re-running after adding new images
+- **Automatically retries failed jobs** that are eligible for retry
+- Uses intelligent retry logic for temporary failures (rate limits, timeouts, server errors)
+- Implements exponential backoff (2s, 4s, 8s, max 30s) to be respectful to the API
+- Maximum of 3 retry attempts per job
 
 **📊 `progress`** - Job monitoring  
 - Checks status of previously submitted jobs
@@ -92,18 +96,19 @@ The `run_eval.sh` script provides several commands for managing the evaluation w
 
 # Troubleshooting
 ./run_eval.sh progress   # Check current status
+./run_eval.sh eval       # Re-run evaluation (will retry any failed jobs automatically)
 ```
 
 ### Evaluation Jobs
 
-For each image in `images/`, runs 6 job configurations with `resolution=200000`:
+For each image in `images/`, runs 5 job configurations with `resolution=200000`:
 
 1. **Image-to-3D (base)**: `geometry_model='base'`
 2. **Image-to-3D (turbo)**: `geometry_model='turbo'` 
 3. **Image-to-3D (turbo + baked)**: `geometry_model='turbo' + texture_model='baked'`
 4. **Image-to-3D (turbo + pbr)**: `geometry_model='turbo' + texture_model='pbr'`
 5. **Image-to-Kit**: `decomposition_model='pro' + geometry_model='turbo' + texture_model='baked'`
-6. **Chat-to-3D**: Re-prompt image for better pose, then Image-to-3D
+<!-- 6. **Chat-to-3D**: Re-prompt image for better pose, then Image-to-3D -->
 
 See [`run_eval.sh help`](run_eval.sh) for all commands.
 
