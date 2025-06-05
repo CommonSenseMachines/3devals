@@ -124,7 +124,6 @@ setup_environment() {
     log "Environment setup complete"
     return 0
 }
-
 # Function to show what will be evaluated
 show_evaluation_plan() {
     echo ""
@@ -132,9 +131,14 @@ show_evaluation_plan() {
     echo -e "${GREEN}                    🚀 CSM.AI 3D Generation Evaluation${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
-    echo -e "${YELLOW}For each image in images/, this will run 1 job configuration:${NC}"
+    echo -e "${YELLOW}For each image in images/, this will run 6 job configurations:${NC}"
     echo ""
-    echo -e "  ${GREEN}1.${NC} Chat-to-3D                → Re-prompt image for better pose, then Image-to-3D"
+    echo -e "  ${GREEN}1.${NC} Image-to-3D (base)        → Basic geometry generation with no texturing"
+    echo -e "  ${GREEN}2.${NC} Image-to-3D (turbo)       → Fast geometry generation with no texturing"
+    echo -e "  ${GREEN}3.${NC} Image-to-3D (turbo+baked) → Fast geometry with baked texture maps"
+    echo -e "  ${GREEN}4.${NC} Image-to-3D (turbo+pbr)   → Fast geometry with PBR material textures"
+    echo -e "  ${GREEN}5.${NC} Image-to-Kit (pro)        → Professional decomposition with turbo geometry and baked textures"
+    echo -e "  ${GREEN}6.${NC} Chat-to-3D                → Re-prompt image for better pose, then Image-to-3D"
     echo ""
     echo -e "${BLUE}Settings:${NC} resolution=200000 for all jobs"
     echo -e "${BLUE}Note:${NC} This script does not run AI retopology (can be time consuming)"
