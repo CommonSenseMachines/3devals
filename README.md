@@ -1,6 +1,6 @@
 # Evaluation framework for 3D generative AI
 
-Evals in 3D generative AI are broken. Let's fix it.
+Evaluations in 3D generative AI are broken. Let's fix them. In these evaluations, we assess images from realistic settings, including single objects, scenes and kits.
 
 ## Overview
 
