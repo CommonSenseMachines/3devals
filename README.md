@@ -105,7 +105,7 @@ For each image in `images/`, runs 6 job configurations with `resolution=200000`:
 5. **Image-to-Kit**: `decomposition_model='pro' + geometry_model='turbo' + texture_model='baked'`
 6. **Chat-to-3D**: Re-prompt image for better pose, then Image-to-3D
 
-See [`USAGE.md`](USAGE.md) for detailed instructions and [`run_eval.sh help`](run_eval.sh) for all commands.
+See [`run_eval.sh help`](run_eval.sh) for all commands.
 
 ## File Structure
 
