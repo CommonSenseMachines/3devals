@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 import logging
 from datetime import datetime
+from tqdm import tqdm
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -62,7 +63,7 @@ JOB_CONFIGS = [
     {"name": "image_to_3d_turbo_baked", "type": "image_to_3d", "geometry_model": "turbo", "texture_model": "baked"},
     {"name": "image_to_3d_turbo_pbr", "type": "image_to_3d", "geometry_model": "turbo", "texture_model": "pbr"},
     {"name": "image_to_kit_pro_turbo_baked", "type": "image_to_kit", "decomposition_model": "pro", "geometry_model": "turbo", "texture_model": "baked"},
-    # {"name": "chat_to_3d_then_image_to_3d", "type": "chat_to_3d", "follow_up": "image_to_3d"}
+    {"name": "chat_to_3d_then_image_to_3d", "type": "chat_to_3d", "follow_up": "image_to_3d"}
 ]
 
 class JobTracker:
@@ -368,43 +369,125 @@ class CSMAPIClient:
         
         logger.info(f"Submitting Chat-to-3D job with prompt: {prompt}")
         return self.create_session(session_data)
+    
+    def submit_chat_to_3d_workflow(self, image_data: str, prompt: str, max_wait_time: int = 300) -> Dict[str, Any]:
+        """Submit complete Chat-to-3D workflow: chat first, then follow-up Image-to-3D (synchronous)"""
+        
+        logger.info(f"Starting Chat-to-3D workflow with prompt: {prompt}")
+        
+        # Step 1: Submit chat-to-3D job
+        chat_session = self.submit_chat_to_3d(image_data, prompt)
+        chat_session_id = chat_session['_id']
+        
+        logger.info(f"Chat-to-3D submitted (session: {chat_session_id}), waiting for completion...")
+        
+        # Step 2: Wait for chat-to-3D to complete
+        start_time = time.time()
+        while time.time() - start_time < max_wait_time:
+            try:
+                chat_status = self.get_session_status(chat_session_id)
+                api_status = chat_status.get('status', 'incomplete')
+                
+                if api_status == 'complete':
+                    logger.info(f"Chat-to-3D completed! Extracting result image...")
+                    
+                    # Step 3: Extract the resulting image
+                    output_image = None
+                    if 'messages' in chat_status:
+                        for message in chat_status['messages']:
+                            if message.get('type') == 'image_generation' and 'images' in message:
+                                for img in message['images']:
+                                    if 'asset' in img and img['asset'].get('status') == 'complete':
+                                        output_image = img['asset']['_id']
+                                        logger.info(f"Found output image: {output_image}")
+                                        break
+                                if output_image:
+                                    break
+                    
+                    if not output_image:
+                        raise Exception("No output image found in completed chat session")
+                    
+                    # Step 4: Submit follow-up Image-to-3D job immediately
+                    logger.info(f"Submitting follow-up Image-to-3D using chat result...")
+                    followup_session = self.submit_image_to_3d(
+                        output_image,
+                        geometry_model='turbo',  # Use turbo for the follow-up
+                        texture_model='pbr'      # Use pbr for better quality
+                    )
+                    
+                    logger.info(f"Complete Chat-to-3D workflow submitted! Follow-up Image-to-3D session: {followup_session['_id']}")
+                    
+                    # Return combined session info
+                    return {
+                        '_id': followup_session['_id'],  # Main session ID for tracking
+                        'workflow_type': 'chat_to_3d_then_image_to_3d',
+                        'chat_session': chat_status,
+                        'followup_session': followup_session,
+                        'output_image_id': output_image
+                    }
+                    
+                elif api_status == 'failed':
+                    raise Exception(f"Chat-to-3D failed: {chat_status}")
+                
+                else:
+                    # Still in progress, wait a bit
+                    logger.info(f"Chat-to-3D in progress (status: {api_status}), waiting...")
+                    time.sleep(10)  # Wait 10 seconds before checking again
+                    
+            except Exception as e:
+                if "Chat-to-3D failed" in str(e):
+                    raise  # Re-raise chat failures immediately
+                logger.warning(f"Error checking chat status, retrying: {e}")
+                time.sleep(5)
+        
+        # Timeout
+        raise Exception(f"Chat-to-3D workflow timed out after {max_wait_time} seconds")
 
 def check_job_progress(client: CSMAPIClient, tracker: JobTracker):
     """Check progress of submitted jobs and update their status"""
     logger.info("Checking progress of submitted jobs...")
     
+    # Collect all jobs to check
+    jobs_to_check = []
     for image_name, jobs in tracker.jobs.items():
         for job_name, job_data in jobs.items():
-            status = job_data.get('status')
-            if status == 'submitted':
-                session_id = job_data.get('session_id')
-                if session_id:
-                    try:
-                        session_status = client.get_session_status(session_id)
-                        api_status = session_status.get('status', 'incomplete')
-                        
-                        if api_status == 'complete':
-                            logger.info(f"Job {job_name} for {image_name} completed!")
-                            tracker.update_job_status(image_name, job_name, 'complete', session_status)
-                        elif api_status == 'failed':
-                            logger.warning(f"Job {job_name} for {image_name} failed")
-                            tracker.update_job_status(image_name, job_name, 'failed', session_status)
-                        else:
-                            logger.info(f"Job {job_name} for {image_name} still in progress (status: {api_status})")
+            jobs_to_check.append((image_name, job_name, job_data))
+    
+    if not jobs_to_check:
+        logger.info("No jobs to check")
+        return
+    
+    for image_name, job_name, job_data in tqdm(jobs_to_check, desc="Checking job progress", unit="job"):
+        status = job_data.get('status')
+        if status == 'submitted':
+            session_id = job_data.get('session_id')
+            if session_id:
+                try:
+                    session_status = client.get_session_status(session_id)
+                    api_status = session_status.get('status', 'incomplete')
                     
-                    except Exception as e:
-                        logger.error(f"Error checking job {job_name} for {image_name}: {e}")
-            elif status == 'failed':
-                retry_count = job_data.get('retry_count', 0)
-                if tracker.should_retry_failed_job(image_name, job_name):
-                    logger.info(f"Job {job_name} for {image_name} previously failed (retry {retry_count}/3): {job_data.get('error', 'Unknown error')} - eligible for retry")
-                else:
-                    logger.info(f"Job {job_name} for {image_name} permanently failed (retry {retry_count}/3): {job_data.get('error', 'Unknown error')}")
-            elif status == 'retrying':
-                retry_count = job_data.get('retry_count', 0)
-                logger.info(f"Job {job_name} for {image_name} is being retried (attempt {retry_count + 1})")
-            elif status == 'complete':
-                logger.info(f"Job {job_name} for {image_name} already completed")
+                    if api_status == 'complete':
+                        logger.info(f"Job {job_name} for {image_name} completed!")
+                        tracker.update_job_status(image_name, job_name, 'complete', session_status)
+                    elif api_status == 'failed':
+                        logger.warning(f"Job {job_name} for {image_name} failed")
+                        tracker.update_job_status(image_name, job_name, 'failed', session_status)
+                    else:
+                        logger.info(f"Job {job_name} for {image_name} still in progress (status: {api_status})")
+                
+                except Exception as e:
+                    logger.error(f"Error checking job {job_name} for {image_name}: {e}")
+        elif status == 'failed':
+            retry_count = job_data.get('retry_count', 0)
+            if tracker.should_retry_failed_job(image_name, job_name):
+                logger.info(f"Job {job_name} for {image_name} previously failed (retry {retry_count}/3): {job_data.get('error', 'Unknown error')} - eligible for retry")
+            else:
+                logger.info(f"Job {job_name} for {image_name} permanently failed (retry {retry_count}/3): {job_data.get('error', 'Unknown error')}")
+        elif status == 'retrying':
+            retry_count = job_data.get('retry_count', 0)
+            logger.info(f"Job {job_name} for {image_name} is being retried (attempt {retry_count + 1})")
+        elif status == 'complete':
+            logger.info(f"Job {job_name} for {image_name} already completed")
     
     # Check for missing jobs (jobs that should exist but don't)
     expected_jobs = [config['name'] for config in JOB_CONFIGS]
@@ -507,24 +590,30 @@ def submit_jobs_for_image(client: CSMAPIClient, tracker: JobTracker, image_path:
                 results["jobs"][job_name] = {"session_id": session['_id'], "status": "submitted"}
                 
             elif job_config["type"] == "chat_to_3d":
-                # For chat-to-3d, we submit the chat job first
-                chat_prompt = "generate a better pose for image to 3D, preserve all details in the original image"
-                session = client.submit_chat_to_3d(current_image_input, chat_prompt)
+                # Use synchronous chat-to-3D workflow (waits for chat, then submits image-to-3D)
+                chat_prompt = "create a 3D rendering version of this image, front facing with 45 degree for image to 3D. do not change semantic details. If this has multiple front and back views, generate a single 3D asset."
+                session = client.submit_chat_to_3d_workflow(current_image_input, chat_prompt)
                 
-                # Extract asset ID from first successful submission (chat_to_3d uses images array)
-                if not image_asset_id and 'messages' in session and len(session['messages']) > 0:
-                    message = session['messages'][0]
-                    if 'images' in message and len(message['images']) > 0:
-                        image_ref = message['images'][0]
-                        if isinstance(image_ref, dict) and '_id' in image_ref:
-                            image_asset_id = image_ref['_id']
-                            logger.info(f"Extracted image asset ID: {image_asset_id} - will reuse for subsequent jobs")
+                # Extract asset ID from first successful submission
+                if not image_asset_id:
+                    # Try to get original image asset ID from chat session data
+                    if 'chat_session' in session and 'messages' in session['chat_session']:
+                        for message in session['chat_session']['messages']:
+                            if message.get('type') == 'user_prompt' and 'images' in message:
+                                for img in message['images']:
+                                    if isinstance(img, dict) and '_id' in img:
+                                        image_asset_id = img['_id']
+                                        logger.info(f"Extracted image asset ID: {image_asset_id} - will reuse for subsequent jobs")
+                                        break
+                                if image_asset_id:
+                                    break
                 
+                # Track the final image-to-3D session ID (the one we care about for results)
                 tracker.mark_job_submitted(image_name, job_name, session['_id'], session)
                 results["jobs"][job_name] = {
-                    "chat_session_id": session['_id'], 
-                    "status": "submitted_chat_phase",
-                    "note": "Need to check chat completion before submitting follow-up image-to-3d"
+                    "session_id": session['_id'], 
+                    "status": "submitted",
+                    "note": "Complete Chat-to-3D workflow: chat completed, follow-up Image-to-3D submitted"
                 }
             
             logger.info(f"Successfully submitted {job_name} for {image_name}")
@@ -584,7 +673,7 @@ def main():
         # Process each image
         all_results = {}
         
-        for image_file in image_files:
+        for image_file in tqdm(image_files, desc="Processing images", unit="image"):
             try:
                 image_results = submit_jobs_for_image(client, tracker, str(image_file))
                 all_results[image_file.stem] = image_results
