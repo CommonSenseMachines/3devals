@@ -1,4 +1,4 @@
-# Evaluation framrwork for 3D generative AI
+# Evaluation framework for 3D generative AI
 
 ## Overview
 
