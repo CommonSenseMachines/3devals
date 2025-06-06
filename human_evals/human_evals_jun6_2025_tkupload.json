@@ -1,0 +1,6 @@
+[
+  {"session_id": "SESSION_1749143971_8716551", "human_eval":{"StructuralForm": 7.0, "PartCoverage": 0.0, "SurfaceDetail": 5.0, "TextureQuality": 0.0}},
+  {"session_id": "SESSION_1749148355_6335964", "human_eval":{"StructuralForm": 8.0, "PartCoverage": 9.0, "SurfaceDetail": 8.0, "TextureQuality": 7.0}},
+  {"session_id": "SESSION_1749148712_3303307", "human_eval":{"StructuralForm": 8.0, "PartCoverage": 0.0, "SurfaceDetail": 5.0, "TextureQuality": 5.0}},
+  {"session_id": "SESSION_1749146142_3027706", "human_eval":{"StructuralForm": 7.0, "PartCoverage": 0.0, "SurfaceDetail": 5.0, "TextureQuality": 4.0}}
+]
