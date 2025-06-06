@@ -107,7 +107,7 @@ The `run_eval.sh` script provides several commands for managing the evaluation w
 
 ### Evaluation Jobs
 
-For each image in `images/`, runs 5 job configurations with `resolution=200000`:
+For each image in `images/`, runs 6 job configurations with `resolution=200000`:
 
 1. **Image-to-3D (base)**: `geometry_model='base'`
 2. **Image-to-3D (turbo)**: `geometry_model='turbo'` 
