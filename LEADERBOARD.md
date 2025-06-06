@@ -18,19 +18,40 @@ The leaderboard compares different 3D generation models by evaluating their outp
 ## Scoring Rubric
 
 ### Dimensions & Weights
-1. **Silhouette** ×2 (Single mesh only - "NA" for parts)
+1. **Silhouette** ×2 (Single mesh only - set "NA" for individual parts)
 2. **Part Coverage** ×1.5 (How well parts represent intended portions)
 3. **Surface Detail** ×1 (Geometric detail quality)
 4. **Texture Quality** ×1 (Material/color quality)
 5. **Joint Readiness** ×0.5 (Connection points for assembly)
 
-### Scoring Scale
+### Scoring Guidelines
 - **0-1**: Unusable (untextured models, major flaws)
 - **2-3**: Poor quality, obvious problems
 - **4-5**: Mediocre, needs significant work
 - **6-7**: Good quality, usable with minor issues
 - **8-9**: Excellent, professional quality
 - **10**: Perfect
+
+### Scoring Rules
+
+#### Single Mesh Models (mesh_count == 1)
+- Score all dimensions normally
+- **Critical Penalty**: If the object visually SHOULD be multi-part (e.g., limbs, wheels, hinges), score Part Coverage = 0
+
+#### Multi-Part Models (mesh_count > 1)
+- **Silhouette** = "NA" (cannot evaluate individual parts without assembly)
+- **Part Coverage**: How well this part represents its intended portion (be generous - successful decomposition is valuable)
+- **Surface Detail**: Quality of geometric detail on this part (score 7+ if decent quality)
+- **Texture Quality**: Texture quality on this part
+- **Joint Readiness**: How well-defined are connection points for assembly (score 7+ if reasonable)
+- **MULTI-PART BONUS**: Individual parts in well-decomposed kits should score higher (6-8 range) as decomposition itself is valuable
+
+### Critical Penalties
+- **Untextured Models**: If render looks completely untextured (solid gray/white, no color/material):
+  - Set Texture Quality = "NA" 
+  - Reduce all other scores by 50%
+  - Weighted total should be ≤ 1.0 unless geometry is exceptional
+- **Wrong Part Count**: Single mesh that should be multi-part gets Part Coverage = 0
 
 ## Usage
 
@@ -75,13 +96,20 @@ SESSION_xxx,csm-base-none_5410537,4.9,4.0
 
 ## Special Handling
 
-### Single vs Multi-Part Models
-- **Single Mesh**: All dimensions scored normally
-- **Multi-Part (Kits)**: Silhouette = "NA", optimized aggregation using best 80% of parts
+### Multi-Part Model Aggregation
+**Small Multi-Part (≤2 parts)**: Regular average of all parts
+
+**Large Multi-Part (>2 parts)**: Sophisticated failure-aware aggregation:
+- **50%+ parts failed (≤2.0 score)**: Complete failure → 0.0
+- **40%+ parts failed**: Cap final score at 1.0
+- **30%+ parts failed**: Cap final score at 2.0  
+- **20%+ failed + poor quality good parts (<6.0 avg)**: Cap at 3.0
+- **<20% failed OR high quality good parts**: Use best 80% with light penalty (10% reduction per failed part)
+- **No failed parts**: Use best 80% normally
 
 ### Texture Penalties
-- Completely untextured models get heavy penalties (≤1.0 total score)
-- TextureQuality = "NA" for gray/white renders
+- Completely untextured models: TextureQuality = "NA", all other scores reduced 50%, total ≤1.0
+- Gray/white renders automatically flagged as untextured
 
 ### API Keys
 On first run, the system prompts for:
