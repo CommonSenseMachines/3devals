@@ -1,3 +1,5 @@
 *.DS_Store
 *.json
 .csm_config
+.leaderboard_config
+debug_queries/
