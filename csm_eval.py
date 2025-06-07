@@ -273,6 +273,27 @@ class CSMAPIClient:
             )
             response.raise_for_status()
             return response.json()
+        except requests.exceptions.HTTPError as e:
+            # Get detailed error information from the response
+            error_details = "Unknown error"
+            try:
+                if hasattr(e.response, 'text') and e.response.text:
+                    error_details = e.response.text
+                    # Try to parse as JSON for better formatting
+                    try:
+                        error_json = e.response.json()
+                        if isinstance(error_json, dict) and 'message' in error_json:
+                            error_details = error_json['message']
+                        elif isinstance(error_json, dict):
+                            error_details = str(error_json)
+                    except:
+                        pass  # Use raw text if JSON parsing fails
+            except:
+                pass
+            
+            logger.error(f"Failed to create session: HTTP {e.response.status_code} - {error_details}")
+            logger.error(f"Request payload: {json.dumps(session_data, indent=2)}")
+            raise Exception(f"HTTP {e.response.status_code}: {error_details}")
         except Exception as e:
             logger.error(f"Failed to create session: {e}")
             raise
@@ -380,6 +401,8 @@ class CSMAPIClient:
         }
         
         logger.info(f"Submitting AI retopology job: model={model}, quads={quads}")
+        logger.info(f"Mesh URL length: {len(mesh_url)} characters")
+        logger.info(f"Mesh URL starts with: {mesh_url[:80]}...")
         return self.create_session(session_data)
     
     # DISABLED: Chat-to-3D functionality - Safety system issues
@@ -650,6 +673,7 @@ def run_retopology_from_sessions():
                 # Submit swift retopology (if not already submitted)
                 if not swift_exists:
                     try:
+                        logger.info(f"Submitting swift retopology with mesh URL: {mesh_url}")
                         swift_session = client.submit_retopology(mesh_url, model="swift", quads=True)
                         logger.info(f"Swift retopology submitted: {swift_session['_id']}")
                         
@@ -665,6 +689,10 @@ def run_retopology_from_sessions():
                             "status": "submitted"
                         })
                         jobs_submitted += 1
+                        
+                        # Add delay after successful submission to avoid rate limiting
+                        time.sleep(2)
+                        
                     except Exception as e:
                         logger.error(f"Failed to submit swift retopology for {mesh_id}: {e}")
                         tracker.mark_job_failed(retopo_key, swift_job_name, str(e))
@@ -675,6 +703,11 @@ def run_retopology_from_sessions():
                 # Submit precision retopology (if not already submitted)
                 if not precision_exists:
                     try:
+                        # Add delay before precision submission to avoid rate limiting
+                        logger.info("Waiting 3 seconds before precision retopology submission to avoid rate limits...")
+                        time.sleep(3)
+                        
+                        logger.info(f"Submitting precision retopology with mesh URL: {mesh_url}")
                         precision_session = client.submit_retopology(mesh_url, model="precision", quads=True)
                         logger.info(f"Precision retopology submitted: {precision_session['_id']}")
                         
