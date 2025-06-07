@@ -1,0 +1,24 @@
+# Retopology Sessions File
+# Add session IDs from completed mesh generation jobs (one per line)
+# You can find session IDs in results/job_summary.json or job_tracking.json
+# Lines starting with # are treated as comments
+
+# Example session IDs (replace with your actual session IDs):
+# SESSION_1234567890_1234567
+# SESSION_0987654321_0987654
+
+# To use:
+# 1. Run evaluation: ./run_eval.sh run
+# 2. Wait for jobs to complete: ./run_eval.sh progress  
+# 3. Add completed session IDs below (remove the # to uncomment)
+# 4. Run retopology: ./run_eval.sh retopo
+
+# You can also view the UI and copy sessions IDs from within each session on 3d.csm.ai
+
+SESSION_1749259869_7850375
+SESSION_1749258814_1486495
+SESSION_1749188180_2218266
+SESSION_1749259866_8227642
+SESSION_1749189230_2665496
+SESSION_1749189070_4933132
+SESSION_1749188735_2364388

@@ -11,6 +11,7 @@ import time
 import json
 import requests
 import base64
+import argparse
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 import logging
@@ -365,6 +366,22 @@ class CSMAPIClient:
         logger.info(f"Submitting Image-to-Kit job: {settings_info}")
         return self.create_session(session_data)
     
+    def submit_retopology(self, mesh_url: str, model: str = 'precision', 
+                         quads: bool = True) -> Dict[str, Any]:
+        """Submit AI retopology job using mesh URL from existing session"""
+        
+        session_data = {
+            "type": "retopology",
+            "input": {
+                "mesh": mesh_url,
+                "quads": quads,
+                "model": model
+            }
+        }
+        
+        logger.info(f"Submitting AI retopology job: model={model}, quads={quads}")
+        return self.create_session(session_data)
+    
     # DISABLED: Chat-to-3D functionality - Safety system issues
     # def submit_chat_to_3d(self, image_data: str, prompt: str) -> Dict[str, Any]:
     #     """Submit Chat-to-3D job (doesn't wait for completion)"""
@@ -489,13 +506,22 @@ def check_job_progress(client: CSMAPIClient, tracker: JobTracker):
                     api_status = session_status.get('status', 'incomplete')
                     
                     if api_status == 'complete':
-                        logger.info(f"Job {job_name} for {image_name} completed!")
+                        if image_name.startswith('retopo_'):
+                            logger.info(f"🔧 Retopology job {job_name} completed!")
+                        else:
+                            logger.info(f"Job {job_name} for {image_name} completed!")
                         tracker.update_job_status(image_name, job_name, 'complete', session_status)
                     elif api_status == 'failed':
-                        logger.warning(f"Job {job_name} for {image_name} failed")
+                        if image_name.startswith('retopo_'):
+                            logger.warning(f"🔧 Retopology job {job_name} failed")
+                        else:
+                            logger.warning(f"Job {job_name} for {image_name} failed")
                         tracker.update_job_status(image_name, job_name, 'failed', session_status)
                     else:
-                        logger.info(f"Job {job_name} for {image_name} still in progress (status: {api_status})")
+                        if image_name.startswith('retopo_'):
+                            logger.info(f"🔧 Retopology job {job_name} still in progress (status: {api_status})")
+                        else:
+                            logger.info(f"Job {job_name} for {image_name} still in progress (status: {api_status})")
                 
                 except Exception as e:
                     logger.error(f"Error checking job {job_name} for {image_name}: {e}")
@@ -507,9 +533,15 @@ def check_job_progress(client: CSMAPIClient, tracker: JobTracker):
                 logger.info(f"Job {job_name} for {image_name} permanently failed (retry {retry_count}/3): {job_data.get('error', 'Unknown error')}")
         elif status == 'retrying':
             retry_count = job_data.get('retry_count', 0)
-            logger.info(f"Job {job_name} for {image_name} is being retried (attempt {retry_count + 1})")
+            if image_name.startswith('retopo_'):
+                logger.info(f"Retopology job {job_name} is being retried (attempt {retry_count + 1})")
+            else:
+                logger.info(f"Job {job_name} for {image_name} is being retried (attempt {retry_count + 1})")
         elif status == 'complete':
-            logger.info(f"Job {job_name} for {image_name} already completed")
+            if image_name.startswith('retopo_'):
+                logger.info(f"Retopology job {job_name} already completed")
+            else:
+                logger.info(f"Job {job_name} for {image_name} already completed")
     
     # Check for missing jobs (jobs that should exist but don't) - ONLY for current images
     expected_jobs = [config['name'] for config in JOB_CONFIGS]
@@ -528,6 +560,203 @@ def check_job_progress(client: CSMAPIClient, tracker: JobTracker):
         missing_jobs = set(expected_jobs) - actual_jobs
         if missing_jobs:
             logger.warning(f"Missing jobs for {image_name}: {', '.join(missing_jobs)} - these may have failed to submit")
+
+def run_retopology_from_sessions():
+    """Run retopology jobs from session IDs listed in retopo_sessions.txt"""
+    logger.info("Running retopology mode")
+    
+    retopo_sessions_file = "retopo_sessions.txt"
+    if not os.path.exists(retopo_sessions_file):
+        logger.error(f"File {retopo_sessions_file} not found")
+        logger.error("Create this file and add session IDs (one per line) from completed mesh generation jobs")
+        logger.error("Example session IDs: SESSION_XXXXXXXXX_XXXXXXXX")
+        return
+    
+    # Read session IDs from file
+    session_ids = []
+    try:
+        with open(retopo_sessions_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):  # Skip empty lines and comments
+                    session_ids.append(line)
+    except Exception as e:
+        logger.error(f"Error reading {retopo_sessions_file}: {e}")
+        return
+    
+    if not session_ids:
+        logger.error(f"No session IDs found in {retopo_sessions_file}")
+        logger.error("Add session IDs (one per line) from completed mesh generation jobs")
+        return
+    
+    logger.info(f"Found {len(session_ids)} session IDs to process for retopology")
+    
+    # Initialize API client and job tracker
+    client = CSMAPIClient(CSM_API_KEY)
+    tracker = JobTracker()
+    
+    # Process each session
+    retopo_results = []
+    jobs_submitted = 0
+    jobs_skipped = 0
+    
+    for session_id in tqdm(session_ids, desc="Processing sessions for retopology", unit="session"):
+        try:
+            logger.info(f"Processing session: {session_id}")
+            
+            # Use session ID as the "image_name" for tracking retopology jobs
+            retopo_key = f"retopo_{session_id}"
+            
+            # Check if retopology jobs for this session already exist
+            swift_job_name = f"retopo_swift_{session_id}"
+            precision_job_name = f"retopo_precision_{session_id}"
+            
+            swift_exists = tracker.should_skip_job(retopo_key, swift_job_name)
+            precision_exists = tracker.should_skip_job(retopo_key, precision_job_name)
+            
+            if swift_exists and precision_exists:
+                logger.info(f"Retopology jobs for session {session_id} already exist, skipping")
+                jobs_skipped += 2
+                continue
+            
+            # Get session details
+            session_data = client.get_session_status(session_id)
+            
+            if session_data.get('status') != 'complete':
+                logger.warning(f"Session {session_id} is not complete (status: {session_data.get('status')}), skipping")
+                continue
+            
+            # Extract mesh asset IDs from the session
+            mesh_assets = extract_mesh_assets_from_session(session_data)
+            
+            if not mesh_assets:
+                logger.warning(f"No mesh assets found in session {session_id}, skipping")
+                continue
+            
+            logger.info(f"Found {len(mesh_assets)} meshes in session {session_id}")
+            
+            # Run retopology on each mesh (both swift and precision)
+            for i, mesh_asset in enumerate(mesh_assets):
+                mesh_id = mesh_asset['id']
+                mesh_url = mesh_asset.get('url', '')
+                
+                if not mesh_url:
+                    logger.warning(f"No GLB URL found for mesh {mesh_id}, skipping")
+                    continue
+                    
+                logger.info(f"Running retopology on mesh {i+1}/{len(mesh_assets)}: {mesh_id}")
+                logger.info(f"Using mesh URL: {mesh_url[:100]}...")
+                
+                # Submit swift retopology (if not already submitted)
+                if not swift_exists:
+                    try:
+                        swift_session = client.submit_retopology(mesh_url, model="swift", quads=True)
+                        logger.info(f"Swift retopology submitted: {swift_session['_id']}")
+                        
+                        # Track in job tracker
+                        tracker.mark_job_submitted(retopo_key, swift_job_name, swift_session['_id'], swift_session)
+                        
+                        retopo_results.append({
+                            "original_session": session_id,
+                            "mesh_asset_id": mesh_id,
+                            "mesh_url": mesh_url,
+                            "retopo_session": swift_session['_id'],
+                            "retopo_model": "swift",
+                            "status": "submitted"
+                        })
+                        jobs_submitted += 1
+                    except Exception as e:
+                        logger.error(f"Failed to submit swift retopology for {mesh_id}: {e}")
+                        tracker.mark_job_failed(retopo_key, swift_job_name, str(e))
+                else:
+                    logger.info(f"Swift retopology for {session_id} already submitted, skipping")
+                    jobs_skipped += 1
+                
+                # Submit precision retopology (if not already submitted)
+                if not precision_exists:
+                    try:
+                        precision_session = client.submit_retopology(mesh_url, model="precision", quads=True)
+                        logger.info(f"Precision retopology submitted: {precision_session['_id']}")
+                        
+                        # Track in job tracker
+                        tracker.mark_job_submitted(retopo_key, precision_job_name, precision_session['_id'], precision_session)
+                        
+                        retopo_results.append({
+                            "original_session": session_id,
+                            "mesh_asset_id": mesh_id,
+                            "mesh_url": mesh_url,
+                            "retopo_session": precision_session['_id'],
+                            "retopo_model": "precision",
+                            "status": "submitted"
+                        })
+                        jobs_submitted += 1
+                    except Exception as e:
+                        logger.error(f"Failed to submit precision retopology for {mesh_id}: {e}")
+                        tracker.mark_job_failed(retopo_key, precision_job_name, str(e))
+                else:
+                    logger.info(f"Precision retopology for {session_id} already submitted, skipping")
+                    jobs_skipped += 1
+        
+        except Exception as e:
+            logger.error(f"Error processing session {session_id}: {e}")
+    
+    # Save retopology results (for reference)
+    if retopo_results:
+        os.makedirs(RESULTS_DIR, exist_ok=True)
+        results_file = os.path.join(RESULTS_DIR, "retopology_results.json")
+        save_results({
+            "timestamp": datetime.now().isoformat(),
+            "processed_sessions": session_ids,
+            "retopology_jobs": retopo_results
+        }, results_file)
+        logger.info(f"Retopology jobs submitted successfully. Results saved to {results_file}")
+    
+    # Summary
+    logger.info(f"Retopology summary: {jobs_submitted} jobs submitted, {jobs_skipped} jobs skipped (already exist)")
+    if jobs_submitted == 0 and jobs_skipped == 0:
+        logger.warning("No retopology jobs were submitted")
+    elif jobs_submitted > 0:
+        logger.info("✅ New retopology jobs submitted! Use './run_eval.sh progress' to monitor progress")
+
+def extract_mesh_assets_from_session(session_data: Dict[str, Any]) -> List[Dict[str, str]]:
+    """Extract mesh asset information from a completed session"""
+    mesh_assets = []
+    output = session_data.get('output', {})
+    
+    # For image_to_3d sessions, check for single mesh
+    if 'mesh' in output and isinstance(output['mesh'], dict):
+        mesh = output['mesh']
+        if mesh.get('status') == 'complete' and mesh.get('_id'):
+            mesh_data = mesh.get('data', {})
+            mesh_assets.append({
+                'id': mesh['_id'],
+                'url': mesh_data.get('glb_url', ''),
+                'type': 'single_mesh'
+            })
+    
+    # For image_to_kit sessions (and some image_to_3d), check for meshes array
+    if 'meshes' in output and isinstance(output['meshes'], list):
+        for i, mesh in enumerate(output['meshes']):
+            if isinstance(mesh, dict) and mesh.get('status') == 'complete' and mesh.get('_id'):
+                mesh_data = mesh.get('data', {})
+                mesh_assets.append({
+                    'id': mesh['_id'],
+                    'url': mesh_data.get('glb_url', ''),
+                    'type': f'meshes[{i}]'
+                })
+    
+    # For image_to_kit sessions, also check for part_meshes
+    if 'part_meshes' in output and isinstance(output['part_meshes'], list):
+        for i, mesh in enumerate(output['part_meshes']):
+            if isinstance(mesh, dict) and mesh.get('status') == 'complete' and mesh.get('_id'):
+                mesh_data = mesh.get('data', {})
+                mesh_assets.append({
+                    'id': mesh['_id'],
+                    'url': mesh_data.get('glb_url', ''),
+                    'type': f'part_meshes[{i}]'
+                })
+    
+    return mesh_assets
 
 def submit_jobs_for_image(client: CSMAPIClient, tracker: JobTracker, image_path: str) -> Dict[str, Any]:
     """Submit all jobs for a single image"""
@@ -631,6 +860,8 @@ def submit_jobs_for_image(client: CSMAPIClient, tracker: JobTracker, image_path:
                 tracker.mark_job_submitted(image_name, job_name, session['_id'], session)
                 results["jobs"][job_name] = {"session_id": session['_id'], "status": "submitted"}
                 
+
+                
             # DISABLED: Chat-to-3D functionality - Safety system issues
             # elif job_config["type"] == "chat_to_3d":
             #     # Use synchronous chat-to-3D workflow (waits for chat, then submits image-to-3D)
@@ -677,10 +908,15 @@ def save_results(results: Dict[str, Any], output_path: str):
 
 def main():
     """Main evaluation function"""
-    logger.info("Starting CSM API evaluation")
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="CSM API Evaluation Script")
+    parser.add_argument('--progress-only', action='store_true', 
+                        help='Only check progress of existing jobs, do not submit new ones')
+    parser.add_argument('--retopo-mode', action='store_true', 
+                        help='Run retopology jobs from retopo_sessions.txt')
+    args = parser.parse_args()
     
-    # Check command line arguments
-    progress_only = len(sys.argv) > 1 and sys.argv[1] == '--progress-only'
+    logger.info("Starting CSM API evaluation")
     
     # Initialize API client and job tracker
     client = CSMAPIClient(CSM_API_KEY)
@@ -689,12 +925,17 @@ def main():
     # Ensure results directory exists
     os.makedirs(RESULTS_DIR, exist_ok=True)
     
+    # Handle retopology mode
+    if args.retopo_mode:
+        run_retopology_from_sessions()
+        return
+    
     # Always check progress of existing jobs first
     if tracker.jobs:
         check_job_progress(client, tracker)
     
     # If this is progress-only mode, skip job submission
-    if progress_only:
+    if args.progress_only:
         logger.info("Progress-only mode - skipping job submission")
     else:
         logger.info("Evaluation mode - will submit new jobs and retry eligible failed jobs")
@@ -791,7 +1032,7 @@ def main():
     summary_path = os.path.join(RESULTS_DIR, "job_summary.json")
     save_results(summary, summary_path)
     
-    if progress_only:
+    if args.progress_only:
         logger.info("Progress check completed.")
     else:
         logger.info("CSM API evaluation completed. Run with --progress-only to check job progress.")

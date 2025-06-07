@@ -1,12 +1,12 @@
 [
-  {"session_id": "SESSION_1749143971_8716551", "human_eval":{"StructuralForm": 7.0, "PartCoverage": 0.0, "SurfaceDetail": 5.0, "TextureQuality": 0.0}},
+  {"session_id": "SESSION_1749143971_8716551", "human_eval":{"StructuralForm": 7.0, "PartCoverage": 0.0, "SurfaceDetail": 5.0, "TextureQuality": null}},
   {"session_id": "SESSION_1749148355_6335964", "human_eval":{"StructuralForm": 8.0, "PartCoverage": 9.0, "SurfaceDetail": 8.0, "TextureQuality": 7.0}},
   {"session_id": "SESSION_1749148712_3303307", "human_eval":{"StructuralForm": 8.0, "PartCoverage": 0.0, "SurfaceDetail": 5.0, "TextureQuality": 5.0}},
   {"session_id": "SESSION_1749146142_3027706", "human_eval":{"StructuralForm": 7.0, "PartCoverage": 0.0, "SurfaceDetail": 5.0, "TextureQuality": 4.0}},
-  {"session_id": "SESSION_1749215178_3261975", "human_eval":{"StructuralForm": 9.0, "PartCoverage": 0.0, "SurfaceDetail": 8.0, "TextureQuality": 0.0}},
+  {"session_id": "SESSION_1749215178_3261975", "human_eval":{"StructuralForm": 9.0, "PartCoverage": 0.0, "SurfaceDetail": 8.0, "TextureQuality": null}},
   {"session_id": "SESSION_1749191626_6797374", "human_eval":{"StructuralForm": 7.5, "PartCoverage": 3.0, "SurfaceDetail": 8.0, "TextureQuality": 6.0}},
   {"session_id": "SESSION_1749191457_2460379", "human_eval":{"StructuralForm": 9.5, "PartCoverage": 9.0, "SurfaceDetail": 9.0, "TextureQuality": 7.5}},
-  {"session_id": "SESSION_1749215187_6178855", "human_eval":{"StructuralForm": 3.0, "PartCoverage": 0.0, "SurfaceDetail": 2.0, "TextureQuality": 0.0}},
+  {"session_id": "SESSION_1749215187_6178855", "human_eval":{"StructuralForm": 3.0, "PartCoverage": 0.0, "SurfaceDetail": 2.0, "TextureQuality": null}},
   {"session_id": "SESSION_1749187253_8994237", "human_eval":{"StructuralForm": 8.0, "PartCoverage": 7.0, "SurfaceDetail": 9.0, "TextureQuality": 7.0}},
   {"session_id": "SESSION_1749187252_7393410", "human_eval":{"StructuralForm": 9.0, "PartCoverage": 0.0, "SurfaceDetail": 9.0, "TextureQuality": 7.5}},
   {"session_id": "SESSION_1749187491_7325498", "human_eval":{"StructuralForm": 8.0, "PartCoverage": 0.0, "SurfaceDetail": 7.5, "TextureQuality": 7.0}},
@@ -17,5 +17,7 @@
   {"session_id": "SESSION_1749191117_5314404", "human_eval":{"StructuralForm": 6.0, "PartCoverage": 0.0, "SurfaceDetail": 6.0, "TextureQuality": 6.0}},
   {"session_id": "SESSION_1749190663_5860658", "human_eval":{"StructuralForm": 1.0, "PartCoverage": 1.0, "SurfaceDetail": 1.0, "TextureQuality": 2.0}},
   {"session_id": "SESSION_1749191119_1406637", "human_eval":{"StructuralForm": 8.0, "PartCoverage": 9.0, "SurfaceDetail": 8.0, "TextureQuality": 7.0}},
-  {"session_id": "SESSION_1749191171_2862203", "human_eval":{"StructuralForm": 3.0, "PartCoverage": 0.0, "SurfaceDetail": 3.0, "TextureQuality": 2.0}}
+  {"session_id": "SESSION_1749191171_2862203", "human_eval":{"StructuralForm": 3.0, "PartCoverage": 0.0, "SurfaceDetail": 3.0, "TextureQuality": 2.0}},
+  {"session_id": "SESSION_1749259881_7566887", "human_eval":{"StructuralForm": 9.0, "PartCoverage": 0.0, "SurfaceDetail": 9.0, "TextureQuality": null}},
+  {"session_id": "SESSION_1749259869_7850375", "human_eval":{"StructuralForm": 9.0, "PartCoverage": 0.0, "SurfaceDetail": 9.0, "TextureQuality": null}}
 ]

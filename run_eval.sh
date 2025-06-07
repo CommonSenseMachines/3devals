@@ -138,11 +138,11 @@ show_evaluation_plan() {
     echo -e "  ${GREEN}3.${NC} Image-to-3D (turbo+baked) → Fast geometry with baked texture maps"
     echo -e "  ${GREEN}4.${NC} Image-to-3D (turbo+pbr)   → Fast geometry with PBR material textures"
     echo -e "  ${GREEN}5.${NC} Image-to-Kit (pro)        → Professional decomposition with turbo geometry and baked textures"
-    echo -e "  ${GREEN}6.${NC} Chat-to-3D                → Re-prompt image for better pose, then Image-to-3D"
+    echo -e "  ${GREEN}6.${NC} Image-to-3D (250k)        → High resolution basic geometry generation"
     echo ""
-    echo -e "${BLUE}Settings:${NC} resolution=200000 for all jobs"
-    echo -e "${BLUE}Note:${NC} This script does not run AI retopology (can be time consuming)"
-    echo -e "${BLUE}      Retopology can be run separately: ${NC}https://docs.csm.ai/sessions/retopology"
+    echo -e "${BLUE}Settings:${NC} resolution=200000 for standard jobs, 250000 for high-res job"
+    echo -e "${BLUE}Note:${NC} AI retopology can be run separately using the ${GREEN}retopo${NC} command"
+    echo -e "${BLUE}      See ${GREEN}./run_eval.sh help${NC} for retopology usage"
     echo ""
     echo -e "${RED}⚠️  IMPORTANT:${NC} Some jobs may initially fail due to API rate limits."
     echo -e "${RED}    The evaluation will automatically retry failed jobs with exponential backoff.${NC}"
@@ -230,6 +230,58 @@ except Exception as e:
     fi
 }
 
+# Function to run retopology jobs
+run_retopology() {
+    log "Running AI retopology jobs..."
+    
+    if [ ! -f "retopo_sessions.txt" ]; then
+        warn "File retopo_sessions.txt not found"
+        echo ""
+        echo -e "${BLUE}To use retopology:${NC}"
+        echo -e "  1. Create ${GREEN}retopo_sessions.txt${NC}"
+        echo -e "  2. Add session IDs from completed mesh generation jobs (one per line)"
+        echo -e "  3. Run ${GREEN}./run_eval.sh retopo${NC}"
+        echo ""
+        echo -e "${YELLOW}Example retopo_sessions.txt:${NC}"
+        echo -e "  SESSION_1234567890_1234567"
+        echo -e "  SESSION_0987654321_0987654"
+        echo -e "  # Lines starting with # are comments"
+        echo ""
+        info "You can find session IDs in results/job_summary.json or job_tracking.json"
+        return 1
+    fi
+    
+    # Count non-empty, non-comment lines
+    SESSION_COUNT=$(grep -v '^#' retopo_sessions.txt 2>/dev/null | grep -v '^[[:space:]]*$' | wc -l)
+    
+    if [ "$SESSION_COUNT" -eq 0 ]; then
+        warn "No session IDs found in retopo_sessions.txt"
+        info "Add session IDs from completed mesh generation jobs (one per line)"
+        return 1
+    fi
+    
+    log "Found $SESSION_COUNT session(s) to process for retopology"
+    
+    echo ""
+    echo -e "${BLUE}🔧 AI Retopology Process:${NC}"
+    echo -e "  • Reads session IDs from ${GREEN}retopo_sessions.txt${NC}"
+    echo -e "  • Extracts mesh URLs from completed sessions"
+    echo -e "  • Runs both ${GREEN}swift${NC} and ${GREEN}precision${NC} retopology on each mesh"
+    echo -e "  • Outputs clean quad topology meshes"
+    echo ""
+    
+    python3 csm_eval.py --retopo-mode
+    
+    if [ $? -eq 0 ]; then
+        log "Retopology jobs submitted successfully"
+        info "Check results/retopology_results.json for job details"
+        info "Monitor progress with: ./run_eval.sh progress"
+    else
+        error "Retopology submission failed"
+        exit 1
+    fi
+}
+
 # Function to clean up old results
 clean_results() {
     log "Cleaning up previous results..."
@@ -263,6 +315,7 @@ show_help() {
     echo -e "  ${GREEN}setup${NC}       Setup environment and dependencies only"
     echo -e "  ${GREEN}eval${NC}        Run evaluation only (skip setup)"
     echo -e "  ${GREEN}progress${NC}    Check progress of submitted jobs"
+    echo -e "  ${GREEN}retopo${NC}      Run AI retopology on completed sessions (reads retopo_sessions.txt)"
     echo -e "  ${GREEN}clean${NC}       Clean up previous results"
     echo -e "  ${GREEN}help${NC}        Show this help message"
     echo ""
@@ -270,9 +323,16 @@ show_help() {
     echo -e "  ${GREEN}CSM_API_KEY${NC}   CSM.ai API key (get from ${BLUE}https://3d.csm.ai/${NC})"
     echo ""
     echo -e "${YELLOW}Examples:${NC}"
-    echo -e "  ${BLUE}$0 run${NC}                 # Full evaluation workflow"
-    echo -e "  ${BLUE}$0 progress${NC}            # Check job progress"
-    echo -e "  ${BLUE}$0 clean && $0 run${NC}     # Clean start"
+    echo -e "  ${BLUE}$0 run${NC}                        # Full evaluation workflow (6 jobs per image)"
+    echo -e "  ${BLUE}$0 progress${NC}                   # Check job progress"
+    echo -e "  ${BLUE}$0 retopo${NC}                     # Run AI retopology on sessions from retopo_sessions.txt"
+    echo -e "  ${BLUE}$0 clean && $0 run${NC}            # Clean start"
+    echo ""
+    echo -e "${YELLOW}Retopology Workflow:${NC}"
+    echo -e "  ${BLUE}1.${NC} Run evaluation: ${GREEN}$0 run${NC}"
+    echo -e "  ${BLUE}2.${NC} Wait for completion: ${GREEN}$0 progress${NC}"
+    echo -e "  ${BLUE}3.${NC} Create retopo_sessions.txt with completed session IDs"
+    echo -e "  ${BLUE}4.${NC} Run retopology: ${GREEN}$0 retopo${NC}"
 }
 
 # Main script logic
@@ -296,6 +356,10 @@ case "${1:-help}" in
     "progress"|"check")
         setup_api_key
         check_progress
+        ;;
+    "retopo"|"retopology")
+        setup_api_key
+        run_retopology
         ;;
     "clean"|"cleanup")
         clean_results

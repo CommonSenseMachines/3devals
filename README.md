@@ -8,7 +8,7 @@ This repository contains CSM.AI API documentation and evaluation scripts for tes
 
 The `full_eval_set` folder has an extensive evaluation set and we will post qualitiative and quantitative results on this here (with continual updates).
 
-Note: This script does not run AI retopology as this can be time consuming - retopology can be run separately on these outputs using the API docs at [https://docs.csm.ai/sessions/retopology](https://docs.csm.ai/sessions/retopology) (or simply from the UI; all assets ran from here will show up on [3d.csm.ai](https://3d.csm.ai) in your account for easy access and downloading).
+Note: AI retopology can be run separately using the `retopo` command after mesh generation jobs complete. See the retopology workflow section below for details.
 
 ## Quick Start
 
@@ -43,6 +43,7 @@ The `run_eval.sh` script provides several commands for managing the evaluation w
 | **`setup`** | Setup environment and dependencies only | `./run_eval.sh setup` |
 | **`eval`** | Run evaluation only (skip setup) | `./run_eval.sh eval` |
 | **`progress`** | Check progress of submitted jobs | `./run_eval.sh progress` |
+| **`retopo`** | Run AI retopology on completed sessions | `./run_eval.sh retopo` |
 | **`clean`** | Clean up previous results (interactive) | `./run_eval.sh clean` |
 | **`help`** | Show all commands and examples | `./run_eval.sh help` |
 
@@ -76,6 +77,14 @@ The `run_eval.sh` script provides several commands for managing the evaluation w
 - Run periodically to monitor 30-60min job processing
 - **Note**: Job tracking uses image file names as unique identifiers
 
+**🔧 `retopo`** - AI retopology workflow
+- Runs AI retopology on completed mesh generation sessions
+- Reads session IDs from `retopo_sessions.txt` file
+- Supports both Image-to-3D and Image-to-Kit sessions
+- Runs both **swift** (fast) and **precision** (high-quality) retopology
+- Outputs clean quad topology meshes suitable for animation/rigging
+- **Setup**: Add completed session IDs to `retopo_sessions.txt` (one per line)
+
 **🧹 `clean`** - Reset evaluation
 - Interactive confirmation required
 - Deletes `results/` directory and `job_tracking.json`
@@ -95,6 +104,10 @@ The `run_eval.sh` script provides several commands for managing the evaluation w
 
 # Add new images and evaluate them
 ./run_eval.sh eval
+
+# Run AI retopology on completed sessions
+echo "SESSION_1234567890_1234567" >> retopo_sessions.txt  # Add session ID
+./run_eval.sh retopo
 
 # Fresh start (removes all previous results)
 ./run_eval.sh clean
@@ -124,6 +137,7 @@ See [`run_eval.sh help`](run_eval.sh) for all commands.
 ```
 ├── csm_eval.py              # Main evaluation script
 ├── job_tracking.json        # Job tracking (created automatically)
+├── retopo_sessions.txt      # Session IDs for retopology (manual)
 ├── requirements.txt         # Python dependencies
 ├── USAGE.md                # Detailed usage guide
 ├── README.md               # This file
@@ -133,6 +147,7 @@ See [`run_eval.sh help`](run_eval.sh) for all commands.
 └── results/                # Output directory (created automatically)
     ├── job_summary.json
     ├── combined_submission_results.json
+    ├── retopology_results.json
     └── {image_name}_submission_results.json
 ```
 
