@@ -107,14 +107,15 @@ The `run_eval.sh` script provides several commands for managing the evaluation w
 
 ### Evaluation Jobs
 
-For each image in `images/`, runs 6 job configurations with `resolution=200000`:
+For each image in `images/`, runs job configurations with `resolution=200000`:
 
 1. **Image-to-3D (base)**: `geometry_model='base'`
 2. **Image-to-3D (turbo)**: `geometry_model='turbo'` 
 3. **Image-to-3D (turbo + baked)**: `geometry_model='turbo' + texture_model='baked'`
 4. **Image-to-3D (turbo + pbr)**: `geometry_model='turbo' + texture_model='pbr'`
 5. **Image-to-Kit**: `decomposition_model='pro' + geometry_model='turbo' + texture_model='baked'`
-6. **Chat-to-3D**: Re-prompt image, then Image-to-3D
+6. **Image-to-3D (250k)**: `geometry_model='base'` with `resolution=250000`
+<!-- 6. **Chat-to-3D**: Re-prompt image, then Image-to-3D (DISABLED: Safety system issues) -->
 
 See [`run_eval.sh help`](run_eval.sh) for all commands.
 
@@ -352,6 +353,8 @@ try {
 }
 ```
 
+<!-- DISABLED: Chat-to-3D functionality - Safety system issues
+
 ### Chat-to-3D
 
 Generate improved images through conversational prompts, then convert to 3D.
@@ -445,5 +448,7 @@ Generate improved images through conversational prompts, then convert to 3D.
 ```
 
 **Note**: Wait for status to be `complete`, then use `messages[1].images[0].asset._id` as the `input.image` in subsequent Image-to-3D calls.
+
+-->
 
 </details>
