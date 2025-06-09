@@ -1,5 +1,7 @@
 # LLM Response Cache (contains API responses - should not be committed)
 llm_cache/
+results*
+leaderboard_*
 
 # API Keys and Configuration
 .leaderboard_config

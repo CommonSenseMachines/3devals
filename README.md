@@ -44,6 +44,7 @@ The `run_eval.sh` script provides several commands for managing the evaluation w
 | **`eval`** | Run evaluation only (skip setup) | `./run_eval.sh eval` |
 | **`progress`** | Check progress of submitted jobs | `./run_eval.sh progress` |
 | **`retopo`** | Run AI retopology on completed sessions | `./run_eval.sh retopo` |
+| **`leaderboard`** | Interactive LLM-based evaluation against human scores (**run AFTER 3D generation**) | `./run_eval.sh leaderboard` |
 | **`clean`** | Clean up previous results (interactive) | `./run_eval.sh clean` |
 | **`help`** | Show all commands and examples | `./run_eval.sh help` |
 
@@ -85,6 +86,13 @@ The `run_eval.sh` script provides several commands for managing the evaluation w
 - Outputs clean quad topology meshes suitable for animation/rigging
 - **Setup**: Add completed session IDs to `retopo_sessions.txt` (one per line)
 
+**📊 `leaderboard`** - LLM evaluation
+- Interactive configuration for LLM provider (Claude, Gemini, GPT-4)
+- Evaluates 3D models against human scores using AI
+- Supports hybrid image evaluation (CSM renders + 3D mesh views)
+- **Run ONLY after 3D generation is complete**
+- Includes debug mode for detailed analysis
+
 **🧹 `clean`** - Reset evaluation
 - Interactive confirmation required
 - Deletes `results/` directory and `job_tracking.json`
@@ -112,6 +120,9 @@ echo "SESSION_1234567890_1234567" >> retopo_sessions.txt  # Add session ID
 # Fresh start (removes all previous results)
 ./run_eval.sh clean
 ./run_eval.sh run
+
+# LLM evaluation leaderboard (run AFTER 3D generation)
+./run_eval.sh leaderboard  # Interactive setup for LLM-based evaluation
 
 # Troubleshooting
 ./run_eval.sh progress   # Check current status

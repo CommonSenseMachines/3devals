@@ -298,6 +298,358 @@ clean_results() {
     fi
 }
 
+# Function to clean leaderboard caches
+clean_leaderboard() {
+    log "Cleaning leaderboard caches and debug data..."
+    
+    echo ""
+    echo -e "${YELLOW}This will delete:${NC}"
+    echo -e "  • ${BLUE}llm_cache/${NC} - LLM response cache"
+    echo -e "  • ${BLUE}leaderboard/debug_queries/${NC} - Debug images and prompts"
+    echo -e "  ${GREEN}(API keys in .leaderboard_config will be preserved)${NC}"
+    echo ""
+    
+    read -p "Continue with leaderboard cache cleanup? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        # Remove LLM cache
+        if [ -d "llm_cache" ]; then
+            rm -rf llm_cache/
+            log "Removed llm_cache/"
+        else
+            info "llm_cache/ not found"
+        fi
+        
+        # Remove debug queries
+        if [ -d "leaderboard/debug_queries" ]; then
+            rm -rf leaderboard/debug_queries/
+            log "Removed leaderboard/debug_queries/"
+        else
+            info "leaderboard/debug_queries/ not found"
+        fi
+        
+        # Keep .leaderboard_config (API keys) - don't delete
+        if [ -f ".leaderboard_config" ]; then
+            info "Preserved .leaderboard_config (API keys)"
+        fi
+        
+        log "Leaderboard cache cleanup completed"
+    else
+        info "Leaderboard cleanup cancelled"
+    fi
+}
+
+# Function to regenerate visualizations from existing results
+regenerate_visualizations() {
+    log "Regenerating visualizations from existing CSV results..."
+    
+    echo ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}                    📊 Visualization Regeneration${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${YELLOW}Regenerate charts and analysis from existing CSV results without re-running LLM evaluation.${NC}"
+    echo ""
+    
+    # Check for available CSV files
+    CSV_FILES=(leaderboard_results*.csv)
+    if [ ! -e "${CSV_FILES[0]}" ]; then
+        error "No leaderboard results CSV files found"
+        info "Run leaderboard evaluation first: ./run_eval.sh leaderboard"
+        exit 1
+    fi
+    
+    echo -e "${GREEN}Available result files:${NC}"
+    for i in "${!CSV_FILES[@]}"; do
+        echo -e "  ${BLUE}$((i+1)).${NC} ${CSV_FILES[$i]}"
+    done
+    echo ""
+    
+    read -p "Select file to regenerate [1-${#CSV_FILES[@]}]: " -r FILE_CHOICE
+    
+    if [[ "$FILE_CHOICE" -ge 1 && "$FILE_CHOICE" -le "${#CSV_FILES[@]}" ]]; then
+        SELECTED_FILE="${CSV_FILES[$((FILE_CHOICE-1))]}"
+    else
+        error "Invalid selection"
+        exit 1
+    fi
+    
+    # Optional custom output directory
+    echo ""
+    read -p "Custom output directory (press Enter for auto-naming): " -r OUTPUT_DIR
+    
+    # Build command
+    CMD="python3 leaderboard/llm_leaderboard.py --visualize-only $SELECTED_FILE"
+    if [ -n "$OUTPUT_DIR" ]; then
+        CMD="$CMD --output-dir $OUTPUT_DIR"
+    fi
+    
+    echo ""
+    log "Regenerating visualizations..."
+    info "Command: $CMD"
+    echo ""
+    
+    eval $CMD
+    
+    if [ $? -eq 0 ]; then
+        echo ""
+        log "Visualization regeneration completed successfully"
+    else
+        error "Visualization regeneration failed"
+        exit 1
+    fi
+}
+
+# Function to compare multiple provider results
+compare_providers() {
+    log "Comparing results from multiple LLM providers..."
+    
+    echo ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}                    🔍 Provider Comparison Analysis${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${YELLOW}Generate comparative analysis between multiple LLM providers.${NC}"
+    echo ""
+    
+    # Check for provider-specific CSV files
+    declare -a AVAILABLE_PROVIDERS
+    for provider in claude gemini openai; do
+        if [ -f "leaderboard_results_${provider}.csv" ]; then
+            AVAILABLE_PROVIDERS+=("$provider")
+        fi
+    done
+    
+    if [ ${#AVAILABLE_PROVIDERS[@]} -lt 2 ]; then
+        error "Need at least 2 provider result files for comparison"
+        echo ""
+        echo -e "${BLUE}Expected files:${NC}"
+        echo -e "  • ${GREEN}leaderboard_results_claude.csv${NC}"
+        echo -e "  • ${GREEN}leaderboard_results_gemini.csv${NC}"
+        echo -e "  • ${GREEN}leaderboard_results_openai.csv${NC}"
+        echo ""
+        info "Run leaderboard evaluation with different providers first"
+        exit 1
+    fi
+    
+    echo -e "${GREEN}Available providers:${NC}"
+    for provider in "${AVAILABLE_PROVIDERS[@]}"; do
+        echo -e "  ✅ ${provider}"
+    done
+    echo ""
+    
+    # Let user select which providers to compare
+    echo -e "${YELLOW}Select providers to compare (space-separated, e.g., 'claude gemini'):${NC}"
+    read -p "Providers [default: all available]: " -r SELECTED_PROVIDERS
+    
+    if [ -z "$SELECTED_PROVIDERS" ]; then
+        SELECTED_PROVIDERS="${AVAILABLE_PROVIDERS[*]}"
+    fi
+    
+    # Validate selected providers
+    declare -a VALID_PROVIDERS
+    for provider in $SELECTED_PROVIDERS; do
+        if [[ " ${AVAILABLE_PROVIDERS[@]} " =~ " ${provider} " ]]; then
+            VALID_PROVIDERS+=("$provider")
+        else
+            warn "Provider '$provider' not available, skipping"
+        fi
+    done
+    
+    if [ ${#VALID_PROVIDERS[@]} -lt 2 ]; then
+        error "Need at least 2 valid providers for comparison"
+        exit 1
+    fi
+    
+    # Custom output directory
+    echo ""
+    DEFAULT_OUTPUT="results_comparison"
+    read -p "Output directory [default: $DEFAULT_OUTPUT]: " -r OUTPUT_DIR
+    OUTPUT_DIR=${OUTPUT_DIR:-$DEFAULT_OUTPUT}
+    
+    # Build command
+    CMD="python3 leaderboard/llm_leaderboard.py --combine-providers ${VALID_PROVIDERS[*]} --combined-output $OUTPUT_DIR"
+    
+    echo ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${YELLOW}Comparison Summary:${NC}"
+    echo -e "  Providers: ${GREEN}${VALID_PROVIDERS[*]}${NC}"
+    echo -e "  Output: ${GREEN}$OUTPUT_DIR${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    
+    log "Generating provider comparison..."
+    info "Command: $CMD"
+    echo ""
+    
+    eval $CMD
+    
+    if [ $? -eq 0 ]; then
+        echo ""
+        log "Provider comparison completed successfully"
+        info "Results saved to: $OUTPUT_DIR/"
+        echo ""
+        echo -e "${GREEN}Generated files:${NC}"
+        echo -e "  📊 ${BLUE}provider_score_comparison.png${NC} - Score distribution comparisons"
+        echo -e "  📈 ${BLUE}provider_human_correlation.png${NC} - Human correlation heatmap"
+        echo -e "  🏆 ${BLUE}provider_elo_comparison.png${NC} - ELO rating comparisons"
+        echo -e "  📋 ${BLUE}combined_provider_report.txt${NC} - Statistical summary"
+        echo -e "  📁 ${BLUE}{provider}_individual/${NC} - Individual provider analyses"
+    else
+        error "Provider comparison failed"
+        exit 1
+    fi
+}
+
+# Function to run leaderboard evaluation
+run_leaderboard() {
+    # Check for subcommands
+    if [ "$2" = "clean" ]; then
+        clean_leaderboard
+        return
+    elif [ "$2" = "visualize" ]; then
+        regenerate_visualizations
+        return
+    elif [ "$2" = "compare" ]; then
+        compare_providers
+        return
+    fi
+    
+    log "Starting Interactive Leaderboard Evaluation..."
+    
+    echo ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}                    📊 LLM Leaderboard Evaluation${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${YELLOW}This tool evaluates 3D models using LLM-based scoring against human evaluations.${NC}"
+    echo -e "${BLUE}It's designed to be run AFTER you have completed 3D generation jobs.${NC}"
+    echo ""
+    
+    # Check if leaderboard script exists
+    if [ ! -f "run_leaderboard.py" ]; then
+        error "run_leaderboard.py not found. Please make sure you're in the correct directory."
+        exit 1
+    fi
+    
+    # Interactive prompts with defaults
+    echo -e "${YELLOW}Configuration:${NC}"
+    echo ""
+    
+    # Human eval only
+    echo -e "${GREEN}1. Human Evaluation Mode${NC}"
+    echo -e "   Only evaluate models that have human evaluation scores for comparison"
+    read -p "   Enable human-eval-only mode? [Y/n]: " -r HUMAN_EVAL_ONLY
+    HUMAN_EVAL_ONLY=${HUMAN_EVAL_ONLY:-Y}
+    if [[ $HUMAN_EVAL_ONLY =~ ^[Yy]|^$ ]]; then
+        HUMAN_EVAL_FLAG="--human-eval-only"
+    else
+        HUMAN_EVAL_FLAG=""
+    fi
+    
+    # Provider choice
+    echo ""
+    echo -e "${GREEN}2. LLM Provider Selection${NC}"
+    echo -e "   Choose which AI provider to use for evaluation:"
+    echo -e "   ${BLUE}1.${NC} Claude (Anthropic)"
+    echo -e "   ${BLUE}2.${NC} Gemini (Google)"
+    echo -e "   ${BLUE}3.${NC} O3 (OpenAI)"
+    read -p "   Select provider [1-3, default: 2]: " -r PROVIDER_CHOICE
+    PROVIDER_CHOICE=${PROVIDER_CHOICE:-2}
+    
+    case $PROVIDER_CHOICE in
+        1)
+            LLM_PROVIDER="claude"
+            PROVIDER_NAME="Claude (Anthropic)"
+            ;;
+        3)
+            LLM_PROVIDER="openai"
+            PROVIDER_NAME="O3 (OpenAI)"
+            ;;
+        *)
+            LLM_PROVIDER="gemini"
+            PROVIDER_NAME="Gemini (Google)"
+            ;;
+    esac
+    
+    # Debug mode
+    echo ""
+    echo -e "${GREEN}3. Debug Mode${NC}"
+    echo -e "   Save detailed debugging data (images, prompts, responses)"
+    read -p "   Enable debug mode? [Y/n]: " -r DEBUG_MODE
+    DEBUG_MODE=${DEBUG_MODE:-Y}
+    if [[ $DEBUG_MODE =~ ^[Yy]|^$ ]]; then
+        DEBUG_FLAG="--debug"
+    else
+        DEBUG_FLAG=""
+    fi
+    
+    # Human eval file path
+    echo ""
+    echo -e "${GREEN}4. Human Evaluation Data${NC}"
+    DEFAULT_HUMAN_EVAL="human_evals/human_evals_jun6_2025_tkupload.json"
+    echo -e "   Path to human evaluation JSON file"
+    read -p "   File path [default: $DEFAULT_HUMAN_EVAL]: " -r HUMAN_EVAL_FILE
+    HUMAN_EVAL_FILE=${HUMAN_EVAL_FILE:-$DEFAULT_HUMAN_EVAL}
+    
+    # Validate human eval file exists
+    if [ ! -f "$HUMAN_EVAL_FILE" ]; then
+        error "Human evaluation file not found: $HUMAN_EVAL_FILE"
+        warn "Please make sure the file exists or use a different path"
+        exit 1
+    fi
+    
+    # Show configuration summary
+    echo ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${YELLOW}Configuration Summary:${NC}"
+    echo -e "  Provider: ${GREEN}$PROVIDER_NAME${NC}"
+    echo -e "  Human eval only: ${GREEN}$([ -n "$HUMAN_EVAL_FLAG" ] && echo "Yes" || echo "No")${NC}"
+    echo -e "  Debug mode: ${GREEN}$([ -n "$DEBUG_FLAG" ] && echo "Yes" || echo "No")${NC}"
+    echo -e "  Human eval file: ${GREEN}$HUMAN_EVAL_FILE${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    
+    # Confirm before running
+    read -p "Start leaderboard evaluation? [Y/n]: " -r CONFIRM
+    CONFIRM=${CONFIRM:-Y}
+    if [[ ! $CONFIRM =~ ^[Yy]|^$ ]]; then
+        info "Leaderboard evaluation cancelled"
+        exit 0
+    fi
+    
+    # Build and run the command
+    CMD="python3 run_leaderboard.py --human-eval-json $HUMAN_EVAL_FILE --llm-provider $LLM_PROVIDER --no-preview $HUMAN_EVAL_FLAG $DEBUG_FLAG"
+    
+    echo ""
+    log "Running leaderboard evaluation..."
+    info "Command: $CMD"
+    echo ""
+    
+    # Execute the command
+    eval $CMD
+    
+    if [ $? -eq 0 ]; then
+        echo ""
+        log "Leaderboard evaluation completed successfully"
+        info "Results saved to: leaderboard_results_${LLM_PROVIDER}.csv"
+        info "Visualizations saved to: results_${LLM_PROVIDER}/"
+        if [ -n "$DEBUG_FLAG" ]; then
+            info "Debug data saved to leaderboard/debug_queries/"
+        fi
+        echo ""
+        echo -e "${GREEN}Next steps:${NC}"
+        echo -e "  📊 Compare providers: ${GREEN}./run_eval.sh leaderboard compare${NC}"
+        echo -e "  🔄 Regenerate charts: ${GREEN}./run_eval.sh leaderboard visualize${NC}"
+        echo -e "  🧹 Clean caches: ${GREEN}./run_eval.sh leaderboard clean${NC}"
+    else
+        echo ""
+        error "Leaderboard evaluation failed"
+        warn "Check the output above for error details"
+        exit 1
+    fi
+}
+
 # Function to show help
 show_help() {
     echo -e "${GREEN}🚀 Evaluation framework for 3D generative AI${NC}"
@@ -316,6 +668,10 @@ show_help() {
     echo -e "  ${GREEN}eval${NC}        Run evaluation only (skip setup)"
     echo -e "  ${GREEN}progress${NC}    Check progress of submitted jobs"
     echo -e "  ${GREEN}retopo${NC}      Run AI retopology on completed sessions (reads retopo_sessions.txt)"
+    echo -e "  ${GREEN}leaderboard${NC} Run LLM-based evaluation against human scores (run AFTER 3D generation)"
+    echo -e "               ${GREEN}clean${NC} - Clean leaderboard caches and debug data"
+    echo -e "               ${GREEN}visualize${NC} - Regenerate charts from existing CSV results"
+    echo -e "               ${GREEN}compare${NC} - Compare results from multiple LLM providers"
     echo -e "  ${GREEN}clean${NC}       Clean up previous results"
     echo -e "  ${GREEN}help${NC}        Show this help message"
     echo ""
@@ -326,6 +682,10 @@ show_help() {
     echo -e "  ${BLUE}$0 run${NC}                        # Full evaluation workflow (6 jobs per image)"
     echo -e "  ${BLUE}$0 progress${NC}                   # Check job progress"
     echo -e "  ${BLUE}$0 retopo${NC}                     # Run AI retopology on sessions from retopo_sessions.txt"
+    echo -e "  ${BLUE}$0 leaderboard${NC}                # Interactive LLM evaluation (run after 3D generation)"
+    echo -e "  ${BLUE}$0 leaderboard clean${NC}          # Clean leaderboard caches and debug data"
+    echo -e "  ${BLUE}$0 leaderboard visualize${NC}      # Regenerate charts from existing results"
+    echo -e "  ${BLUE}$0 leaderboard compare${NC}        # Compare multiple LLM providers"
     echo -e "  ${BLUE}$0 clean && $0 run${NC}            # Clean start"
     echo ""
     echo -e "${YELLOW}Retopology Workflow:${NC}"
@@ -333,6 +693,14 @@ show_help() {
     echo -e "  ${BLUE}2.${NC} Wait for completion: ${GREEN}$0 progress${NC}"
     echo -e "  ${BLUE}3.${NC} Create retopo_sessions.txt with completed session IDs"
     echo -e "  ${BLUE}4.${NC} Run retopology: ${GREEN}$0 retopo${NC}"
+    echo ""
+    echo -e "${YELLOW}Leaderboard Workflow:${NC}"
+    echo -e "  ${BLUE}1.${NC} Complete 3D generation: ${GREEN}$0 run${NC} → ${GREEN}$0 progress${NC}"
+    echo -e "  ${BLUE}2.${NC} Run LLM evaluation: ${GREEN}$0 leaderboard${NC} (repeat with different providers)"
+    echo -e "  ${BLUE}3.${NC} Compare providers: ${GREEN}$0 leaderboard compare${NC}"
+    echo -e "  ${BLUE}4.${NC} Regenerate charts: ${GREEN}$0 leaderboard visualize${NC}"
+    echo -e "  ${BLUE}5.${NC} Clean caches if needed: ${GREEN}$0 leaderboard clean${NC}"
+    echo -e "  ${RED}⚠️  Note:${NC} Leaderboard should be run AFTER 3D generation is complete"
 }
 
 # Main script logic
@@ -360,6 +728,9 @@ case "${1:-help}" in
     "retopo"|"retopology")
         setup_api_key
         run_retopology
+        ;;
+    "leaderboard")
+        run_leaderboard "$@"
         ;;
     "clean"|"cleanup")
         clean_results
