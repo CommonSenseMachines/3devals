@@ -1,10 +1,6 @@
 # Evaluation framework for 3D generative AI
 
-## 📹 Video Demo
-
-Click to view: [**3D Layout Images Overview Video**](./images_video.mp4)
-
-*Shows all 82 evaluation images - first 10 display slowly (2s each), remaining images cycle quickly (0.5s each)*
+https://github.com/user-attachments/assets/fb1637cf-0657-4016-bcf0-9e025841c1aa
 
 Evaluations in 3D generative AI are broken. Let's fix them. In these evaluations, we assess images from realistic settings, including single objects, scenes and kits. But the key point is to let you bring your own images! Just drop them into the `images` folder and run `./run_eval.sh`. This will run various model permutations, including automatically producing a parts-based kit.
 
