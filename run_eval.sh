@@ -501,6 +501,123 @@ compare_providers() {
     fi
 }
 
+# Function to generate visual layouts
+generate_layouts() {
+    log "Generating visual layouts from audit data..."
+    
+    echo ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}                    🎨 Visual Layout Generation${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${YELLOW}Create beautiful comparison layouts showing original images alongside all model variants.${NC}"
+    echo ""
+    
+    # Check if audit files exist
+    AUDIT_FILES=(audits/*.json)
+    if [ ! -e "${AUDIT_FILES[0]}" ]; then
+        error "No audit files found in audits/ directory"
+        info "Run evaluation first: ./run_eval.sh eval"
+        exit 1
+    fi
+    
+    echo -e "${GREEN}Available audit files:${NC}"
+    for i in "${!AUDIT_FILES[@]}"; do
+        filename=$(basename "${AUDIT_FILES[$i]}")
+        echo -e "  ${BLUE}$((i+1)).${NC} ${filename}"
+    done
+    echo ""
+    
+    # Let user select audit file
+    read -p "Select audit file [1-${#AUDIT_FILES[@]}]: " -r FILE_CHOICE
+    
+    if [[ "$FILE_CHOICE" -ge 1 && "$FILE_CHOICE" -le "${#AUDIT_FILES[@]}" ]]; then
+        SELECTED_AUDIT="${AUDIT_FILES[$((FILE_CHOICE-1))]}"
+    else
+        error "Invalid selection"
+        exit 1
+    fi
+    
+    # Optional: Let user specify specific images or process all
+    echo ""
+    echo -e "${YELLOW}Image Selection:${NC}"
+    echo -e "  ${BLUE}1.${NC} Process all images in audit file"
+    echo -e "  ${BLUE}2.${NC} Process specific images only"
+    read -p "Select option [1-2, default: 1]: " -r IMAGE_CHOICE
+    IMAGE_CHOICE=${IMAGE_CHOICE:-1}
+    
+    SPECIFIC_IMAGES=""
+    if [ "$IMAGE_CHOICE" = "2" ]; then
+        echo ""
+        echo -e "${GREEN}Available images in audit:${NC}"
+        python3 -c "
+import json
+with open('$SELECTED_AUDIT', 'r') as f:
+    data = json.load(f)
+for i, image_name in enumerate(data.keys(), 1):
+    print(f'  {i}. {image_name}')
+"
+        echo ""
+        read -p "Enter image names (space-separated): " -r SPECIFIC_IMAGES
+    fi
+    
+    # Custom output directory
+    echo ""
+    DEFAULT_OUTPUT="tmp"
+    read -p "Output directory [default: $DEFAULT_OUTPUT]: " -r OUTPUT_DIR
+    OUTPUT_DIR=${OUTPUT_DIR:-$DEFAULT_OUTPUT}
+    
+    # Build command
+    CMD="python3 generate_layout.py $SELECTED_AUDIT"
+    if [ -n "$SPECIFIC_IMAGES" ]; then
+        CMD="$CMD $SPECIFIC_IMAGES"
+    fi
+    if [ "$OUTPUT_DIR" != "tmp" ]; then
+        CMD="$CMD --output-dir $OUTPUT_DIR"
+    fi
+    
+    echo ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${YELLOW}Generation Summary:${NC}"
+    echo -e "  Audit file: ${GREEN}$(basename "$SELECTED_AUDIT")${NC}"
+    echo -e "  Images: ${GREEN}$([ -n "$SPECIFIC_IMAGES" ] && echo "$SPECIFIC_IMAGES" || echo "all")${NC}"
+    echo -e "  Output: ${GREEN}$OUTPUT_DIR/${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    
+    log "Generating layouts..."
+    info "Command: $CMD"
+    echo ""
+    
+    # Check if generate_layout.py exists
+    if [ ! -f "generate_layout.py" ]; then
+        error "generate_layout.py not found. Please make sure you're in the correct directory."
+        exit 1
+    fi
+    
+    # Execute the command
+    eval $CMD
+    
+    if [ $? -eq 0 ]; then
+        echo ""
+        log "Layout generation completed successfully"
+        info "Layouts saved to: $OUTPUT_DIR/"
+        echo ""
+        echo -e "${GREEN}Features:${NC}"
+        echo -e "  🖼️  ${BLUE}Original images${NC} from full_eval_set/"
+        echo -e "  🎯 ${BLUE}Rendered 3D models${NC} for each variant (base, turbo, pbr, etc.)"
+        echo -e "  🧩 ${BLUE}Kit model parts${NC} shown as composite grids"
+        echo -e "  🌙 ${BLUE}Dark theme${NC} with high contrast for better visibility"
+        echo ""
+        echo -e "${YELLOW}Next steps:${NC}"
+        echo -e "  📁 View layouts: ${GREEN}open $OUTPUT_DIR/${NC}"
+        echo -e "  🔄 Generate more: ${GREEN}./run_eval.sh layouts${NC}"
+    else
+        error "Layout generation failed"
+        exit 1
+    fi
+}
+
 # Function to run leaderboard evaluation
 run_leaderboard() {
     # Check for subcommands
@@ -668,6 +785,7 @@ show_help() {
     echo -e "  ${GREEN}eval${NC}        Run evaluation only (skip setup)"
     echo -e "  ${GREEN}progress${NC}    Check progress of submitted jobs"
     echo -e "  ${GREEN}retopo${NC}      Run AI retopology on completed sessions (reads retopo_sessions.txt)"
+    echo -e "  ${GREEN}layouts${NC}     Generate visual comparison layouts from audit data"
     echo -e "  ${GREEN}leaderboard${NC} Run LLM-based evaluation against human scores (run AFTER 3D generation)"
     echo -e "               ${GREEN}clean${NC} - Clean leaderboard caches and debug data"
     echo -e "               ${GREEN}visualize${NC} - Regenerate charts from existing CSV results"
@@ -682,6 +800,7 @@ show_help() {
     echo -e "  ${BLUE}$0 run${NC}                        # Full evaluation workflow (6 jobs per image)"
     echo -e "  ${BLUE}$0 progress${NC}                   # Check job progress"
     echo -e "  ${BLUE}$0 retopo${NC}                     # Run AI retopology on sessions from retopo_sessions.txt"
+    echo -e "  ${BLUE}$0 layouts${NC}                    # Generate visual comparison layouts from audit data"
     echo -e "  ${BLUE}$0 leaderboard${NC}                # Interactive LLM evaluation (run after 3D generation)"
     echo -e "  ${BLUE}$0 leaderboard clean${NC}          # Clean leaderboard caches and debug data"
     echo -e "  ${BLUE}$0 leaderboard visualize${NC}      # Regenerate charts from existing results"
@@ -728,6 +847,9 @@ case "${1:-help}" in
     "retopo"|"retopology")
         setup_api_key
         run_retopology
+        ;;
+    "layouts"|"layout")
+        generate_layouts
         ;;
     "leaderboard")
         run_leaderboard "$@"

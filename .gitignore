@@ -56,3 +56,6 @@ Thumbs.db
 
 # Generated CSV files (optional - you may want to commit these)
 leaderboard_results.csv
+
+# Generated layout images
+tmp/
