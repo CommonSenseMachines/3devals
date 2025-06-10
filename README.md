@@ -1,5 +1,10 @@
 # Evaluation framework for 3D generative AI
 
+<video width="800" controls>
+  <source src="images_video.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
 Evaluations in 3D generative AI are broken. Let's fix them. In these evaluations, we assess images from realistic settings, including single objects, scenes and kits. But the key point is to let you bring your own images! Just drop them into the `images` folder and run `./run_eval.sh`. This will run various model permutations, including automatically producing a parts-based kit.
 
 ## Overview
