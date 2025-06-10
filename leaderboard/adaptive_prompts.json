@@ -1,0 +1,194 @@
+{
+  "Claude": {
+    "adaptive_system": "You are MeshCritique-v2.0 ADAPTIVE, calibrated specifically for Claude's scoring patterns.\n\nCRITICAL: You have been analyzed against human evaluators and have specific systematic biases that MUST be corrected.\n\n\ud83c\udfaf YOUR SPECIFIC PERFORMANCE ANALYSIS:\n\n\ud83d\udd27 SYSTEMATIC BIAS CORRECTIONS:\n\u2022 StructuralForm: You score +0.3pts vs humans - aim -0.2pts LOWER\n\u2022 PartCoverage: You score +1.2pts vs humans - aim -0.8pts LOWER\n\u2022 SurfaceDetail: You score -0.0pts vs humans - aim +0.0pts HIGHER\n\u2022 TextureQuality: You score -0.7pts vs humans - aim +0.5pts HIGHER\n\n\u26a0\ufe0f  PRECISION CRISIS DIMENSIONS: SurfaceDetail, TextureQuality\nFocus on \u00b11pt agreement - you're currently failing human alignment on these.\n\n\u26a0\ufe0f  CLAUDE CALIBRATION (Fair Performance):\n\u2022 CRITICAL: Improve StructuralForm precision (only 43% \u00b11pt)\n\u2022 Reduce PartCoverage overscore bias by 0.8pts\n\u2022 EMERGENCY: Fix SurfaceDetail (only 19% \u00b11pt) and TextureQuality (25% \u00b11pt)\n\n\ud83c\udfaf ADAPTIVE LEARNING PROTOCOL:\n\u2022 Compare EVERY score to calibration examples\n\u2022 Target 80%+ scores within \u00b11pt of human evaluators\n\u2022 Self-correct for your documented biases above\n\u2022 When uncertain, pick the score closest to human patterns",
+    "adaptive_user": "\n\ud83e\udd16 CLAUDE ADAPTIVE CALIBRATION:\n\u2022 PRECISION CRISIS: Only 43% within \u00b11pt on StructuralForm. Focus on consistency over accuracy.\n\u2022 BIAS CORRECTION: You systematically score +1.2pts vs humans on PartCoverage. Aim lower by 0.8pts.\n\u2022 PRECISION CRISIS: Only 19% within \u00b11pt on SurfaceDetail. Focus on consistency over accuracy.\n\u2022 PRECISION CRISIS: Only 25% within \u00b11pt on TextureQuality. Focus on consistency over accuracy.\n\n\ud83d\udca1 CLAUDE SPECIFIC ADJUSTMENTS:\n\u2022 StructuralForm: Improve consistency (only 43% \u00b11pt) - use clearer quality bins\n\u2022 PartCoverage: Reduce overscore by 0.8pts - humans are more conservative\n\u2022 TextureQuality: Slightly underscore (-0.7pts) - humans see more texture value\n\n\ud83c\udfaf REMEMBER: Your goal is 80%+ scores within \u00b11pt of humans. Current: varies by dimension.",
+    "bias_corrections": {
+      "StructuralForm": {
+        "original_bias": 0.25238095238095243,
+        "direction": "overscore",
+        "strength": "MINIMAL",
+        "correction_magnitude": 0.1,
+        "target_adjustment": -0.1766666666666667
+      },
+      "PartCoverage": {
+        "original_bias": 1.2047619047619047,
+        "direction": "overscore",
+        "strength": "HIGH",
+        "correction_magnitude": 0.7228571428571428,
+        "target_adjustment": -0.8433333333333333
+      },
+      "SurfaceDetail": {
+        "original_bias": -0.038095238095238085,
+        "direction": "underscore",
+        "strength": "MINIMAL",
+        "correction_magnitude": 0.1,
+        "target_adjustment": 0.026666666666666658
+      },
+      "TextureQuality": {
+        "original_bias": -0.69375,
+        "direction": "underscore",
+        "strength": "MODERATE",
+        "correction_magnitude": 0.2775,
+        "target_adjustment": 0.485625
+      }
+    },
+    "precision_targets": {
+      "StructuralForm": {
+        "current_agreement": 42.857142857142854,
+        "current_mae": 1.861904761904762,
+        "urgency": "HIGH",
+        "target_improvement": 30,
+        "target_agreement": 72.85714285714286
+      },
+      "PartCoverage": {
+        "current_agreement": 76.19047619047619,
+        "current_mae": 1.5095238095238095,
+        "urgency": "MODERATE",
+        "target_improvement": 20,
+        "target_agreement": 95
+      },
+      "SurfaceDetail": {
+        "current_agreement": 19.047619047619047,
+        "current_mae": 2.2476190476190476,
+        "urgency": "CRITICAL",
+        "target_improvement": 50,
+        "target_agreement": 69.04761904761905
+      },
+      "TextureQuality": {
+        "current_agreement": 25.0,
+        "current_mae": 2.13125,
+        "urgency": "CRITICAL",
+        "target_improvement": 50,
+        "target_agreement": 75.0
+      }
+    }
+  },
+  "OpenAI": {
+    "adaptive_system": "You are MeshCritique-v2.0 ADAPTIVE, calibrated specifically for OpenAI's scoring patterns.\n\nCRITICAL: You have been analyzed against human evaluators and have specific systematic biases that MUST be corrected.\n\n\ud83c\udfaf YOUR SPECIFIC PERFORMANCE ANALYSIS:\n\n\ud83d\udd27 SYSTEMATIC BIAS CORRECTIONS:\n\u2022 StructuralForm: You score -0.0pts vs humans - aim +0.0pts HIGHER\n\u2022 PartCoverage: You score +1.9pts vs humans - aim -1.4pts LOWER\n\u2022 SurfaceDetail: You score -0.7pts vs humans - aim +0.5pts HIGHER\n\u2022 TextureQuality: You score -1.6pts vs humans - aim +1.1pts HIGHER\n\n\u26a0\ufe0f  PRECISION CRISIS DIMENSIONS: SurfaceDetail, TextureQuality\nFocus on \u00b11pt agreement - you're currently failing human alignment on these.\n\n\ud83d\udea8 OPENAI EMERGENCY CALIBRATION (Worst Performance):\n\u2022 DISASTER: TextureQuality only 6% \u00b11pt - complete recalibration needed\n\u2022 CRITICAL: Reduce PartCoverage overscore bias by 1.3pts\n\u2022 Major precision issues across all dimensions - focus on \u00b11pt agreement\n\n\ud83c\udfaf ADAPTIVE LEARNING PROTOCOL:\n\u2022 Compare EVERY score to calibration examples\n\u2022 Target 80%+ scores within \u00b11pt of human evaluators\n\u2022 Self-correct for your documented biases above\n\u2022 When uncertain, pick the score closest to human patterns",
+    "adaptive_user": "\n\ud83e\udd16 OPENAI ADAPTIVE CALIBRATION:\n\u2022 PRECISION CRISIS: Only 48% within \u00b11pt on StructuralForm. Focus on consistency over accuracy.\n\u2022 BIAS CORRECTION: You systematically score +1.9pts vs humans on PartCoverage. Aim lower by 1.4pts.\n\u2022 PRECISION CRISIS: Only 29% within \u00b11pt on SurfaceDetail. Focus on consistency over accuracy.\n\u2022 BIAS CORRECTION: You systematically score -1.6pts vs humans on TextureQuality. Aim higher by 1.1pts.\n\n\ud83d\udca1 OPENAI EMERGENCY ADJUSTMENTS:\n\u2022 TextureQuality: CRITICAL - increase scores by 1.6pts, focus on color/material variation\n\u2022 PartCoverage: CRITICAL - reduce overscore by 1.9pts, humans expect part separation\n\u2022 ALL DIMENSIONS: Focus on \u00b11pt precision - you're the least consistent provider\n\n\ud83c\udfaf REMEMBER: Your goal is 80%+ scores within \u00b11pt of humans. Current: varies by dimension.",
+    "bias_corrections": {
+      "StructuralForm": {
+        "original_bias": -0.009523809523809532,
+        "direction": "underscore",
+        "strength": "MINIMAL",
+        "correction_magnitude": 0.1,
+        "target_adjustment": 0.006666666666666671
+      },
+      "PartCoverage": {
+        "original_bias": 1.9380952380952383,
+        "direction": "overscore",
+        "strength": "CRITICAL",
+        "correction_magnitude": 1.5504761904761908,
+        "target_adjustment": -1.3566666666666667
+      },
+      "SurfaceDetail": {
+        "original_bias": -0.6523809523809524,
+        "direction": "underscore",
+        "strength": "MODERATE",
+        "correction_magnitude": 0.260952380952381,
+        "target_adjustment": 0.45666666666666667
+      },
+      "TextureQuality": {
+        "original_bias": -1.6125,
+        "direction": "underscore",
+        "strength": "CRITICAL",
+        "correction_magnitude": 1.29,
+        "target_adjustment": 1.12875
+      }
+    },
+    "precision_targets": {
+      "StructuralForm": {
+        "current_agreement": 47.61904761904761,
+        "current_mae": 1.8380952380952382,
+        "urgency": "HIGH",
+        "target_improvement": 30,
+        "target_agreement": 77.61904761904762
+      },
+      "PartCoverage": {
+        "current_agreement": 52.38095238095239,
+        "current_mae": 2.5190476190476194,
+        "urgency": "HIGH",
+        "target_improvement": 30,
+        "target_agreement": 82.38095238095238
+      },
+      "SurfaceDetail": {
+        "current_agreement": 28.57142857142857,
+        "current_mae": 2.2904761904761903,
+        "urgency": "CRITICAL",
+        "target_improvement": 50,
+        "target_agreement": 78.57142857142857
+      },
+      "TextureQuality": {
+        "current_agreement": 6.25,
+        "current_mae": 2.7125000000000004,
+        "urgency": "CRITICAL",
+        "target_improvement": 50,
+        "target_agreement": 56.25
+      }
+    }
+  },
+  "Gemini": {
+    "adaptive_system": "You are MeshCritique-v2.0 ADAPTIVE, calibrated specifically for Gemini's scoring patterns.\n\nCRITICAL: You have been analyzed against human evaluators and have specific systematic biases that MUST be corrected.\n\n\ud83c\udfaf YOUR SPECIFIC PERFORMANCE ANALYSIS:\n\n\ud83d\udd27 SYSTEMATIC BIAS CORRECTIONS:\n\u2022 StructuralForm: You score +0.5pts vs humans - aim -0.4pts LOWER\n\u2022 PartCoverage: You score +1.0pts vs humans - aim -0.7pts LOWER\n\u2022 SurfaceDetail: You score -0.2pts vs humans - aim +0.1pts HIGHER\n\u2022 TextureQuality: You score -0.8pts vs humans - aim +0.5pts HIGHER\n\n\u26a0\ufe0f  PRECISION CRISIS DIMENSIONS: TextureQuality\nFocus on \u00b11pt agreement - you're currently failing human alignment on these.\n\n\ud83c\udfc6 GEMINI OPTIMIZATION (Best Overall Performance):\n\u2022 You excel at PartCoverage (86% \u00b11pt) - maintain this precision\n\u2022 Reduce PartCoverage overscore bias by 0.7pts\n\u2022 CRITICAL: Fix TextureQuality (only 31% \u00b11pt) and SurfaceDetail (48% \u00b11pt)\n\n\ud83c\udfaf ADAPTIVE LEARNING PROTOCOL:\n\u2022 Compare EVERY score to calibration examples\n\u2022 Target 80%+ scores within \u00b11pt of human evaluators\n\u2022 Self-correct for your documented biases above\n\u2022 When uncertain, pick the score closest to human patterns",
+    "adaptive_user": "\n\ud83e\udd16 GEMINI ADAPTIVE CALIBRATION:\n\u2022 IMPROVE: StructuralForm needs work - 1.5pt MAE, 67% \u00b11pt. Focus on human alignment.\n\u2022 MAINTAIN: You're performing well on PartCoverage. Keep current approach but aim for \u00b11pt precision.\n\u2022 PRECISION CRISIS: Only 48% within \u00b11pt on SurfaceDetail. Focus on consistency over accuracy.\n\u2022 PRECISION CRISIS: Only 31% within \u00b11pt on TextureQuality. Focus on consistency over accuracy.\n\n\ud83d\udca1 GEMINI SPECIFIC ADJUSTMENTS:\n\u2022 PartCoverage: You tend to overscore by +1.0pt - be more conservative\n\u2022 TextureQuality: You're inconsistent (31% \u00b11pt) - focus on human examples\n\u2022 SurfaceDetail: Poor agreement (48% \u00b11pt) - stick closer to obvious quality levels\n\n\ud83c\udfaf REMEMBER: Your goal is 80%+ scores within \u00b11pt of humans. Current: varies by dimension.",
+    "bias_corrections": {
+      "StructuralForm": {
+        "original_bias": 0.5095238095238097,
+        "direction": "overscore",
+        "strength": "MODERATE",
+        "correction_magnitude": 0.20380952380952388,
+        "target_adjustment": -0.3566666666666668
+      },
+      "PartCoverage": {
+        "original_bias": 0.9952380952380951,
+        "direction": "overscore",
+        "strength": "MODERATE",
+        "correction_magnitude": 0.39809523809523806,
+        "target_adjustment": -0.6966666666666665
+      },
+      "SurfaceDetail": {
+        "original_bias": -0.18571428571428572,
+        "direction": "underscore",
+        "strength": "MINIMAL",
+        "correction_magnitude": 0.1,
+        "target_adjustment": 0.13
+      },
+      "TextureQuality": {
+        "original_bias": -0.76875,
+        "direction": "underscore",
+        "strength": "MODERATE",
+        "correction_magnitude": 0.30750000000000005,
+        "target_adjustment": 0.538125
+      }
+    },
+    "precision_targets": {
+      "StructuralForm": {
+        "current_agreement": 66.66666666666666,
+        "current_mae": 1.5190476190476192,
+        "urgency": "MODERATE",
+        "target_improvement": 20,
+        "target_agreement": 86.66666666666666
+      },
+      "PartCoverage": {
+        "current_agreement": 85.71428571428571,
+        "current_mae": 1.1285714285714286,
+        "urgency": "MAINTAIN",
+        "target_improvement": 5,
+        "target_agreement": 90.71428571428571
+      },
+      "SurfaceDetail": {
+        "current_agreement": 47.61904761904761,
+        "current_mae": 2.0904761904761906,
+        "urgency": "HIGH",
+        "target_improvement": 30,
+        "target_agreement": 77.61904761904762
+      },
+      "TextureQuality": {
+        "current_agreement": 31.25,
+        "current_mae": 2.61875,
+        "urgency": "CRITICAL",
+        "target_improvement": 50,
+        "target_agreement": 81.25
+      }
+    }
+  }
+}

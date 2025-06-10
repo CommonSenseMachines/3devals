@@ -1,0 +1,287 @@
+{
+  "provider_agreement": {
+    "Claude": {
+      "StructuralForm": {
+        "valid_pairs": 21,
+        "mae": 1.861904761904762,
+        "agreement_1pt": 42.857142857142854,
+        "agreement_2pt": 76.19047619047619,
+        "systematic_bias": 0.25238095238095243,
+        "correlation": 0.31109942613567304,
+        "icc": 0.1034475701929111,
+        "concordance": 0.10251219498063156,
+        "interpretation": "\ud83d\udfe0 Fair agreement (MAE < 2.0) | \u274c Low precision (<60% within \u00b11pt) | \u2705 No systematic bias | \u274c Poor reliability (ICC < 0.40)",
+        "llm_mean": 7.180952380952381,
+        "human_mean": 6.928571428571429,
+        "included": true
+      },
+      "PartCoverage": {
+        "valid_pairs": 21,
+        "mae": 1.5095238095238095,
+        "agreement_1pt": 76.19047619047619,
+        "agreement_2pt": 80.95238095238095,
+        "systematic_bias": 1.2047619047619047,
+        "correlation": 0.6936098376487204,
+        "icc": 0.6866243467105057,
+        "concordance": 0.6518044794925488,
+        "interpretation": "\ud83d\udfe0 Fair agreement (MAE < 2.0) | \u26a0\ufe0f Moderate precision (60-80% within \u00b11pt) | \ud83d\udcc8 LLM overscore bias (+1.2pts) | \ud83d\udc4d Good reliability (ICC \u2265 0.60)",
+        "llm_mean": 3.0142857142857142,
+        "human_mean": 1.8095238095238095,
+        "included": true
+      },
+      "SurfaceDetail": {
+        "valid_pairs": 21,
+        "mae": 2.2476190476190476,
+        "agreement_1pt": 19.047619047619047,
+        "agreement_2pt": 66.66666666666666,
+        "systematic_bias": -0.038095238095238085,
+        "correlation": 0.33343465807420125,
+        "icc": 0.12861625063442994,
+        "concordance": 0.12859364736947315,
+        "interpretation": "\ud83d\udd34 Poor agreement (MAE \u2265 2.0) | \u274c Low precision (<60% within \u00b11pt) | \u2705 No systematic bias | \u274c Poor reliability (ICC < 0.40)",
+        "llm_mean": 6.438095238095237,
+        "human_mean": 6.476190476190476,
+        "included": true
+      },
+      "TextureQuality": {
+        "valid_pairs": 16,
+        "mae": 2.13125,
+        "agreement_1pt": 25.0,
+        "agreement_2pt": 56.25,
+        "systematic_bias": -0.69375,
+        "correlation": 0.42028959395452536,
+        "icc": 0.40563701387578827,
+        "concordance": 0.38766360132331523,
+        "interpretation": "\ud83d\udd34 Poor agreement (MAE \u2265 2.0) | \u274c Low precision (<60% within \u00b11pt) | \u26a0\ufe0f Slight bias (-0.7pts) | \u26a0\ufe0f Fair reliability (ICC \u2265 0.40)",
+        "llm_mean": 4.8375,
+        "human_mean": 5.53125,
+        "included": true
+      }
+    },
+    "OpenAI": {
+      "StructuralForm": {
+        "valid_pairs": 21,
+        "mae": 1.8380952380952382,
+        "agreement_1pt": 47.61904761904761,
+        "agreement_2pt": 71.42857142857143,
+        "systematic_bias": -0.009523809523809532,
+        "correlation": 0.6000084794348747,
+        "icc": 0.2591024725072948,
+        "concordance": 0.2590991772403642,
+        "interpretation": "\ud83d\udfe0 Fair agreement (MAE < 2.0) | \u274c Low precision (<60% within \u00b11pt) | \u2705 No systematic bias | \u274c Poor reliability (ICC < 0.40)",
+        "llm_mean": 6.919047619047619,
+        "human_mean": 6.928571428571429,
+        "included": true
+      },
+      "PartCoverage": {
+        "valid_pairs": 21,
+        "mae": 2.5190476190476194,
+        "agreement_1pt": 52.38095238095239,
+        "agreement_2pt": 61.904761904761905,
+        "systematic_bias": 1.9380952380952383,
+        "correlation": 0.491035493106041,
+        "icc": 0.48970412723871637,
+        "concordance": 0.4261279406602396,
+        "interpretation": "\ud83d\udd34 Poor agreement (MAE \u2265 2.0) | \u274c Low precision (<60% within \u00b11pt) | \ud83d\udcc8 LLM overscore bias (+1.9pts) | \u26a0\ufe0f Fair reliability (ICC \u2265 0.40)",
+        "llm_mean": 3.7476190476190476,
+        "human_mean": 1.8095238095238095,
+        "included": true
+      },
+      "SurfaceDetail": {
+        "valid_pairs": 21,
+        "mae": 2.2904761904761903,
+        "agreement_1pt": 28.57142857142857,
+        "agreement_2pt": 52.38095238095239,
+        "systematic_bias": -0.6523809523809524,
+        "correlation": 0.4137910272605322,
+        "icc": 0.25955176093916754,
+        "concordance": 0.2477365277013113,
+        "interpretation": "\ud83d\udd34 Poor agreement (MAE \u2265 2.0) | \u274c Low precision (<60% within \u00b11pt) | \u26a0\ufe0f Slight bias (-0.7pts) | \u274c Poor reliability (ICC < 0.40)",
+        "llm_mean": 5.8238095238095235,
+        "human_mean": 6.476190476190476,
+        "included": true
+      },
+      "TextureQuality": {
+        "valid_pairs": 16,
+        "mae": 2.7125000000000004,
+        "agreement_1pt": 6.25,
+        "agreement_2pt": 50.0,
+        "systematic_bias": -1.6125,
+        "correlation": 0.27569415975897826,
+        "icc": 0.24560737978700758,
+        "concordance": 0.19058610882506302,
+        "interpretation": "\ud83d\udd34 Poor agreement (MAE \u2265 2.0) | \u274c Low precision (<60% within \u00b11pt) | \ud83d\udcc9 LLM underscore bias (-1.6pts) | \u274c Poor reliability (ICC < 0.40)",
+        "llm_mean": 3.91875,
+        "human_mean": 5.53125,
+        "included": true
+      }
+    },
+    "Gemini": {
+      "StructuralForm": {
+        "valid_pairs": 21,
+        "mae": 1.5190476190476192,
+        "agreement_1pt": 66.66666666666666,
+        "agreement_2pt": 90.47619047619048,
+        "systematic_bias": 0.5095238095238097,
+        "correlation": 0.49090287590609427,
+        "icc": 0.4246513957350344,
+        "concordance": 0.41278711527316,
+        "interpretation": "\ud83d\udfe0 Fair agreement (MAE < 2.0) | \u26a0\ufe0f Moderate precision (60-80% within \u00b11pt) | \u26a0\ufe0f Slight bias (+0.5pts) | \u26a0\ufe0f Fair reliability (ICC \u2265 0.40)",
+        "llm_mean": 7.438095238095239,
+        "human_mean": 6.928571428571429,
+        "included": true
+      },
+      "PartCoverage": {
+        "valid_pairs": 21,
+        "mae": 1.1285714285714286,
+        "agreement_1pt": 85.71428571428571,
+        "agreement_2pt": 85.71428571428571,
+        "systematic_bias": 0.9952380952380951,
+        "correlation": 0.7653645477708515,
+        "icc": 0.7537513772907741,
+        "concordance": 0.7281936285512393,
+        "interpretation": "\ud83d\udfe1 Good agreement (MAE < 1.5) | \u2705 High precision (80%+ within \u00b11pt) | \u26a0\ufe0f Slight bias (+1.0pts) | \ud83c\udfc6 Excellent reliability (ICC \u2265 0.75)",
+        "llm_mean": 2.804761904761905,
+        "human_mean": 1.8095238095238095,
+        "included": true
+      },
+      "SurfaceDetail": {
+        "valid_pairs": 21,
+        "mae": 2.0904761904761906,
+        "agreement_1pt": 47.61904761904761,
+        "agreement_2pt": 61.904761904761905,
+        "systematic_bias": -0.18571428571428572,
+        "correlation": 0.3359052477707607,
+        "icc": 0.31121753849964895,
+        "concordance": 0.31028967269220353,
+        "interpretation": "\ud83d\udd34 Poor agreement (MAE \u2265 2.0) | \u274c Low precision (<60% within \u00b11pt) | \u2705 No systematic bias | \u274c Poor reliability (ICC < 0.40)",
+        "llm_mean": 6.29047619047619,
+        "human_mean": 6.476190476190476,
+        "included": true
+      },
+      "TextureQuality": {
+        "valid_pairs": 16,
+        "mae": 2.61875,
+        "agreement_1pt": 31.25,
+        "agreement_2pt": 43.75,
+        "systematic_bias": -0.76875,
+        "correlation": 0.07921013793411233,
+        "icc": 0.0763355701993028,
+        "concordance": 0.07220782624753531,
+        "interpretation": "\ud83d\udd34 Poor agreement (MAE \u2265 2.0) | \u274c Low precision (<60% within \u00b11pt) | \u26a0\ufe0f Slight bias (-0.8pts) | \u274c Poor reliability (ICC < 0.40)",
+        "llm_mean": 4.7625,
+        "human_mean": 5.53125,
+        "included": true
+      }
+    }
+  },
+  "dimension_rankings": {
+    "StructuralForm": [
+      [
+        "Gemini",
+        1.5190476190476192,
+        66.66666666666666,
+        1.1476190476190473
+      ],
+      [
+        "OpenAI",
+        1.8380952380952382,
+        47.61904761904761,
+        0.6380952380952378
+      ],
+      [
+        "Claude",
+        1.861904761904762,
+        42.857142857142854,
+        0.5666666666666667
+      ]
+    ],
+    "PartCoverage": [
+      [
+        "Gemini",
+        1.1285714285714286,
+        85.71428571428571,
+        1.7285714285714286
+      ],
+      [
+        "Claude",
+        1.5095238095238095,
+        76.19047619047619,
+        1.2523809523809524
+      ],
+      [
+        "OpenAI",
+        2.5190476190476194,
+        52.38095238095239,
+        0.004761904761904412
+      ]
+    ],
+    "SurfaceDetail": [
+      [
+        "Gemini",
+        2.0904761904761906,
+        47.61904761904761,
+        0.3857142857142855
+      ],
+      [
+        "OpenAI",
+        2.2904761904761903,
+        28.57142857142857,
+        -0.004761904761904634
+      ],
+      [
+        "Claude",
+        2.2476190476190476,
+        19.047619047619047,
+        -0.05714285714285716
+      ]
+    ],
+    "TextureQuality": [
+      [
+        "Claude",
+        2.13125,
+        25.0,
+        0.11874999999999991
+      ],
+      [
+        "Gemini",
+        2.61875,
+        31.25,
+        -0.3062499999999999
+      ],
+      [
+        "OpenAI",
+        2.7125000000000004,
+        6.25,
+        -0.6500000000000004
+      ]
+    ]
+  },
+  "overall_rankings": [
+    [
+      "Gemini",
+      1.8392113095238098,
+      57.81249999999999,
+      0.73891369047619
+    ],
+    [
+      "Claude",
+      1.9375744047619046,
+      40.77380952380952,
+      0.4701636904761906
+    ],
+    [
+      "OpenAI",
+      2.340029761904762,
+      33.70535714285714,
+      -0.0029761904761904656
+    ]
+  ],
+  "recommendations": [
+    "\u274c No provider shows reliable agreement - optimization needed",
+    "\u26a0\ufe0f Claude has systematic bias in: PartCoverage (overscore)",
+    "\u26a0\ufe0f OpenAI has systematic bias in: PartCoverage (overscore), TextureQuality (underscore)",
+    "\ud83d\udd34 High disagreement in: SurfaceDetail, TextureQuality - prompt fixes needed",
+    "\ud83c\udfaf TextureQuality needs optimization - implement N/A exclusion and texture model guidance"
+  ]
+}

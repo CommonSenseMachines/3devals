@@ -1698,7 +1698,7 @@ def run_leaderboard(human_eval_json_path: Path, api_key: str, llm_client, debug_
             else:
                 human_avg_str = f"avg:{human_avg:.1f}"
             
-            print(f"   {model:<20} Claude: avg:{avg_score:.1f} [{score_detail}]")
+            print(f"   {model:<20} {provider_name.title()}: avg:{avg_score:.1f} [{score_detail}]")
             print(f"   {'':<20} Human:  {human_avg_str} [{human_detail}]")
 
     # Write enhanced CSV with all dimensions
@@ -1893,7 +1893,7 @@ def generate_comprehensive_analysis(results: LeaderboardResults, output_dir: Pat
     generate_comparative_analysis(df, results, output_dir, provider_name)
     
     # Generate summary report
-    generate_summary_report(results, df, output_dir)
+    generate_summary_report(results, df, output_dir, provider_name)
     
     print(f"✅ Analysis complete! Check {output_dir} for all reports and visualizations.")
 
@@ -2018,12 +2018,12 @@ def generate_comparative_analysis(df: pd.DataFrame, results: LeaderboardResults,
             axes[i].scatter(human_valid, claude_valid, alpha=0.6)
             axes[i].plot([0, 10], [0, 10], 'r--', alpha=0.5)  # Perfect agreement line
             axes[i].set_xlabel(f'Human {dim}')
-            axes[i].set_ylabel(f'Claude {dim}')
+            axes[i].set_ylabel(f'{provider_name.title()} {dim}')
             axes[i].set_title(f'{dim}\nCorr: {correlation:.3f} (n={len(human_valid)})')
         else:
             # Not enough valid human scores for correlation
             axes[i].set_xlabel(f'Human {dim}')
-            axes[i].set_ylabel(f'Claude {dim}')
+            axes[i].set_ylabel(f'{provider_name.title()} {dim}')
             axes[i].set_title(f'{dim}\nInsufficient human data')
             axes[i].text(0.5, 0.5, 'No valid\nhuman scores', 
                         ha='center', va='center', transform=axes[i].transAxes)
@@ -2077,7 +2077,7 @@ def generate_comparative_analysis(df: pd.DataFrame, results: LeaderboardResults,
     agreement_df = pd.DataFrame(agreement_data)
     agreement_df.to_csv(output_dir / f"{provider_name}_human_agreement.csv", index=False)
 
-def generate_summary_report(results: LeaderboardResults, df: pd.DataFrame, output_dir: Path) -> None:
+def generate_summary_report(results: LeaderboardResults, df: pd.DataFrame, output_dir: Path, provider_name: str = "claude") -> None:
     """Generate comprehensive summary report"""
     
     with open(output_dir / "summary_report.txt", "w") as f:
@@ -2103,7 +2103,7 @@ def generate_summary_report(results: LeaderboardResults, df: pd.DataFrame, outpu
                     human_avg_str = "N/A"
                 else:
                     human_avg_str = f"{human_avg:.1f}"
-                f.write(f"  {dim}: Claude {claude_avg:.1f}, Human {human_avg_str}\n")
+                f.write(f"  {dim}: {provider_name.title()} {claude_avg:.1f}, Human {human_avg_str}\n")
             f.write("\n")
         
         # Key insights
@@ -2127,7 +2127,7 @@ def generate_summary_report(results: LeaderboardResults, df: pd.DataFrame, outpu
         most_consistent = min(consistency_scores, key=lambda x: x[1])[0]
         f.write(f"• Most Consistent Model: {most_consistent}\n")
         
-        # Claude-Human agreement
+        # LLM-Human agreement
         overall_correlations = []
         for dim in dimensions:
             human_scores = df[f'human_{dim}']
@@ -2142,9 +2142,9 @@ def generate_summary_report(results: LeaderboardResults, df: pd.DataFrame, outpu
         
         if overall_correlations:
             avg_correlation = np.mean(overall_correlations)
-            f.write(f"• Claude-Human Agreement: {avg_correlation:.3f} average correlation ({len(overall_correlations)}/{len(dimensions)} dimensions)\n")
+            f.write(f"• LLM-Human Agreement: {avg_correlation:.3f} average correlation ({len(overall_correlations)}/{len(dimensions)} dimensions)\n")
         else:
-            f.write(f"• Claude-Human Agreement: N/A (insufficient human data)\n")
+            f.write(f"• LLM-Human Agreement: N/A (insufficient human data)\n")
         
         f.write(f"\n• Total Concepts Evaluated: {len(results.model_scores)}\n")
         
